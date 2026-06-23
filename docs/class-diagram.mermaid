@@ -1,0 +1,40 @@
+classDiagram
+    class ProjectGroup {
+        +int id
+        +string name
+        +int sort_order
+        +string created_at
+    }
+
+    class Project {
+        +int id
+        +int group_id
+        +string name
+        +int sort_order
+        +int is_active
+        +string created_at
+    }
+
+    class WorkRecord {
+        +int id
+        +int project_id
+        +string user_name
+        +int quantity
+        +string recorded_at
+        +string created_at
+        +string deleted_at
+    }
+
+    class AuditLog {
+        +int id
+        +string action
+        +string table_name
+        +int record_id
+        +string user_name
+        +string detail
+        +string created_at
+    }
+
+    ProjectGroup "1" --> "*" Project : 包含
+    Project "1" --> "*" WorkRecord : 关联
+    WorkRecord ..> AuditLog : 触发记录

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.spec
+*.exe
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Project
+project-root/backend/data/
+project-root/backend/build/
+project-root/backend/dist/
+installer/
+
+# Rust
+workload-tool/target/
+*.rlib
+*.rmeta
+
+# Misc
+*.xlsx
+nul
+package-lock.json
