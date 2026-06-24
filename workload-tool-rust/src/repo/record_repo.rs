@@ -85,32 +85,40 @@ pub fn create(pool: &DbPool, body: &RecordCreate) -> Result<RecordResponse> {
 
 pub fn update(pool: &DbPool, id: i64, body: &RecordUpdate, user_name: &str) -> Result<RecordResponse> {
     let conn = pool.get()?;
+    let existing = get_by_id(pool, id)?;
+    if existing.deleted_at.is_some() {
+        return Err(crate::error::AppError::Validation("记录已被删除，无法编辑".into()));
+    }
     let mut updated = false;
     if let Some(ref un) = body.user_name {
-        conn.execute("UPDATE work_records SET user_name=?1 WHERE id=?2 AND deleted_at IS NULL", (un, id))?;
+        conn.execute("UPDATE work_records SET user_name=?1 WHERE id=?2", (un, id))?;
         updated = true;
     }
     if let Some(q) = body.quantity {
-        conn.execute("UPDATE work_records SET quantity=?1 WHERE id=?2 AND deleted_at IS NULL", (q, id))?;
+        conn.execute("UPDATE work_records SET quantity=?1 WHERE id=?2", (q, id))?;
         updated = true;
     }
     if let Some(ref dt) = body.recorded_at {
-        conn.execute("UPDATE work_records SET recorded_at=?1 WHERE id=?2 AND deleted_at IS NULL", (dt, id))?;
+        conn.execute("UPDATE work_records SET recorded_at=?1 WHERE id=?2", (dt, id))?;
         updated = true;
     }
-    if updated {
-        audit_repo::log(pool, "update", "work_records", Some(id), user_name, "编辑记录")?;
+    if !updated {
+        return Err(crate::error::AppError::Validation("没有需要更新的字段".into()));
     }
+    audit_repo::log(pool, "update", "work_records", Some(id), user_name, "编辑记录")?;
     get_by_id(pool, id)
 }
 
 pub fn soft_delete(pool: &DbPool, id: i64, user_name: &str) -> Result<()> {
     let conn = pool.get()?;
-    let r = get_by_id(pool, id)?;
-    if r.deleted_at.is_some() { return Err(crate::error::AppError::Validation("记录已被删除".into())); }
-    conn.execute(
-        "UPDATE work_records SET deleted_at=datetime('now') WHERE id=?1", [id],
-    )?;
+    let deleted: Option<String> = conn.query_row(
+        "SELECT deleted_at FROM work_records WHERE id=?1", [id], |r| r.get(0)
+    ).map_err(|e| match e {
+        rusqlite::Error::QueryReturnedNoRows => crate::error::AppError::NotFound("记录不存在".into()),
+        _ => e.into(),
+    })?;
+    if deleted.is_some() { return Err(crate::error::AppError::Validation("记录已被删除".into())); }
+    conn.execute("UPDATE work_records SET deleted_at=datetime('now') WHERE id=?1", [id])?;
     audit_repo::log(pool, "delete", "work_records", Some(id), user_name, "软删除记录")?;
     Ok(())
 }
