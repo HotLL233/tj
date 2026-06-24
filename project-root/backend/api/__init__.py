@@ -10,6 +10,10 @@ from .audit_logs import router as audit_logs_router
 
 api_router = APIRouter(prefix="/api")
 
+@api_router.get("/version")
+def api_version():
+    return {"version": "0.2.3"}
+
 api_router.include_router(groups_router)
 api_router.include_router(projects_router)
 api_router.include_router(records_router)

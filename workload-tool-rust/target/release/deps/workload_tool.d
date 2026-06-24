@@ -27,3 +27,5 @@ src\api\audit_handler.rs:
 src\error.rs:
 src\tray.rs:
 src\../icon.ico:
+
+# env-dep:CARGO_PKG_VERSION=0.1.1

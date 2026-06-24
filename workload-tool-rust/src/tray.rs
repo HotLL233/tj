@@ -134,7 +134,7 @@ pub fn run_tray(port: u16) {
 
     let tray_icon = TrayIconBuilder::new()
         .with_menu(Box::new(menu))
-        .with_tooltip("工作量统计工具 v0.1.1")
+        .with_tooltip(concat!("工作量统计工具 v", env!("CARGO_PKG_VERSION")))
         .with_icon(icon)
         .build()
         .expect("Failed to create tray icon");

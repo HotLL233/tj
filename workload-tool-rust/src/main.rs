@@ -89,7 +89,7 @@ async fn main() {
     #[cfg(feature = "console")]
     {
         // 开发模式：保留控制台
-        println!("🚀 工作量统计工具 v0.1.0 (Rust) — http://{}", addr);
+        println!("🚀 工作量统计工具 v{} (Rust) — http://{}", env!("CARGO_PKG_VERSION"), addr);
         println!("按 Ctrl+C 退出");
         _server.await.unwrap();
     }
