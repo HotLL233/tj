@@ -19,10 +19,10 @@ async fn version() -> Json<VersionInfo> {
 pub fn api_router(pool: DbPool) -> Router {
     Router::new()
         .route("/api/version", get(version))
-        .nest("/api/groups", group_handler::router(pool.clone()))
-        .nest("/api/projects", project_handler::router(pool.clone()))
-        .nest("/api/records", record_handler::router(pool.clone()))
-        .nest("/api/stats", stats_handler::router(pool.clone()))
-        .nest("/api/export", export_handler::router(pool.clone()))
-        .nest("/api/audit-logs", audit_handler::router(pool))
+        .merge(group_handler::router(pool.clone()))
+        .merge(project_handler::router(pool.clone()))
+        .merge(record_handler::router(pool.clone()))
+        .merge(stats_handler::router(pool.clone()))
+        .merge(export_handler::router(pool.clone()))
+        .merge(audit_handler::router(pool))
 }

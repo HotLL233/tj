@@ -15,7 +15,7 @@ pub struct AuditQuery {
 
 pub fn router(pool: DbPool) -> Router {
     Router::new()
-        .route("/", get(list))
+        .route("/api/audit-logs", get(list))
         .with_state(pool)
 }
 

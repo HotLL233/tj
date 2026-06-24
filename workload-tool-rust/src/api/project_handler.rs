@@ -14,8 +14,8 @@ pub struct ProjectQuery {
 
 pub fn router(pool: DbPool) -> Router {
     Router::new()
-        .route("/", get(list).post(create))
-        .route("/{id}", axum::routing::put(update).delete(delete))
+        .route("/api/projects", get(list).post(create))
+        .route("/api/projects/:id", axum::routing::put(update).delete(delete))
         .with_state(pool)
 }
 

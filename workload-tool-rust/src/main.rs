@@ -9,7 +9,6 @@ mod api;
 mod error;
 mod tray;
 
-use axum::{Router, routing::get};
 use axum::http::header;
 use axum::response::IntoResponse;
 use std::net::SocketAddr;
@@ -57,17 +56,17 @@ async fn main() {
     // 构建路由 — API 优先，静态文件 + SPA fallback
     async fn serve_index() -> impl axum::response::IntoResponse {
         match tokio::fs::read_to_string("static/index.html").await {
-            Ok(html) => ([(header::CONTENT_TYPE, "text/html; charset=utf-8")], html).into_response(),
+            Ok(html) => (
+                [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
+                html,
+            ).into_response(),
             Err(_) => (axum::http::StatusCode::NOT_FOUND, "index.html not found").into_response(),
         }
     }
 
-    let spa = Router::new()
-        .nest_service("/assets", ServeDir::new("static/assets"))
-        .fallback(get(serve_index));
-
     let app = api::api_router(pool)
-        .merge(spa)
+        .nest_service("/assets", ServeDir::new("static/assets"))
+        .fallback(serve_index)
         .layer(CorsLayer::permissive());
 
     let addr = SocketAddr::from(([0, 0, 0, 0], PORT));

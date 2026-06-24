@@ -7,8 +7,8 @@ use crate::repo::group_repo;
 
 pub fn router(pool: DbPool) -> Router {
     Router::new()
-        .route("/", get(list).post(create))
-        .route("/{id}", axum::routing::put(update).delete(delete))
+        .route("/api/groups", get(list).post(create))
+        .route("/api/groups/:id", axum::routing::put(update).delete(delete))
         .with_state(pool)
 }
 

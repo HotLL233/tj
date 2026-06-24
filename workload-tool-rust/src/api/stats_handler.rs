@@ -61,11 +61,11 @@ pub struct InstrumentStats {
 
 pub fn router(pool: DbPool) -> Router {
     Router::new()
-        .route("/summary", get(summary))
-        .route("/by-user", get(by_user))
-        .route("/by-project", get(by_project))
-        .route("/by-type", get(by_type))
-        .route("/by-instrument", get(by_instrument))
+        .route("/api/stats/summary", get(summary))
+        .route("/api/stats/by-user", get(by_user))
+        .route("/api/stats/by-project", get(by_project))
+        .route("/api/stats/by-type", get(by_type))
+        .route("/api/stats/by-instrument", get(by_instrument))
         .with_state(pool)
 }
 

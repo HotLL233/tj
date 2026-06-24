@@ -10,6 +10,15 @@ pub fn log(pool: &DbPool, action: &str, table: &str, record_id: Option<i64>, use
     Ok(())
 }
 
+/// Write audit log on an existing connection (same-connection, avoids pool contention)
+pub fn log_on_conn(conn: &rusqlite::Connection, action: &str, table: &str, record_id: Option<i64>, user_name: &str, detail: &str) -> Result<()> {
+    conn.execute(
+        "INSERT INTO audit_log (action, table_name, record_id, user_name, detail) VALUES (?1,?2,?3,?4,?5)",
+        rusqlite::params!(action, table, record_id, user_name, detail),
+    )?;
+    Ok(())
+}
+
 pub fn list(pool: &DbPool, page: i64, page_size: i64) -> Result<(Vec<AuditLogResponse>, i64)> {
     let conn = pool.get()?;
     let count: i64 = conn.query_row("SELECT COUNT(*) FROM audit_log", [], |r| r.get(0))?;

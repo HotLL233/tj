@@ -22,14 +22,23 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        let (status, message) = match &self {
-            AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
-            AppError::Validation(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
-            AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+        // 统一返回 HTTP 200 + 业务错误码，与 Python 版一致，避免 axios 将 4xx/5xx 当作网络异常
+        let code = match &self {
+            AppError::NotFound(_) => 1,
+            AppError::Validation(_) | AppError::Conflict(_) => 1,
+            _ => 500,
         };
-        let body = json!({ "code": status.as_u16(), "message": message, "data": null });
-        (status, Json(body)).into_response()
+        let message = match &self {
+            AppError::NotFound(msg) => msg.clone(),
+            AppError::Validation(msg) => msg.clone(),
+            AppError::Conflict(msg) => msg.clone(),
+            AppError::Database(e) => format!("数据库错误: {}", e),
+            AppError::Pool(e) => format!("连接池错误: {}", e),
+            AppError::Xlsx(e) => format!("Excel错误: {}", e),
+            AppError::Internal(msg) => msg.clone(),
+        };
+        let body = json!({ "code": code, "message": message, "data": null });
+        (StatusCode::OK, Json(body)).into_response()
     }
 }
 

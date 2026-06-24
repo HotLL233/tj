@@ -20,10 +20,10 @@ pub struct RecordQuery {
 
 pub fn router(pool: DbPool) -> Router {
     Router::new()
-        .route("/", get(list).post(create))
-        .route("/{id}", axum::routing::put(update).delete(soft_delete))
-        .route("/{id}/restore", axum::routing::post(restore))
-        .route("/by-user/{user_name}", axum::routing::delete(delete_by_user))
+        .route("/api/records", get(list).post(create))
+        .route("/api/records/:id", axum::routing::put(update).delete(soft_delete))
+        .route("/api/records/restore/:id", axum::routing::post(restore))
+        .route("/api/records/by-user/:user_name", axum::routing::delete(delete_by_user))
         .with_state(pool)
 }
 

@@ -100,7 +100,7 @@ export const deleteRecord = (id: number): Promise<ApiResponse<null>> =>
   client.delete(`/records/${id}`).then((r) => r.data);
 
 export const restoreRecord = (id: number): Promise<ApiResponse<WorkRecord>> =>
-  client.post(`/records/${id}/restore`).then((r) => r.data);
+  client.post(`/records/restore/${id}`).then((r) => r.data);
 
 export const updateRecord = (
   id: number,

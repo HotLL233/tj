@@ -14,7 +14,7 @@ pub struct ExportQuery {
 
 pub fn router(pool: DbPool) -> Router {
     Router::new()
-        .route("/excel", get(export_excel))
+        .route("/api/export/excel", get(export_excel))
         .with_state(pool)
 }
 
