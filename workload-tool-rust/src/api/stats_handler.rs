@@ -18,6 +18,7 @@ pub struct StatsSummary {
     pub total_records: i64,
     pub user_count: i64,
     pub project_count: i64,
+    #[serde(rename = "details")]
     pub breakdown: Vec<PeriodBreakdown>,
 }
 
