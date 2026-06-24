@@ -70,7 +70,7 @@ async fn main() {
         .merge(spa)
         .layer(CorsLayer::permissive());
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], PORT));
+    let addr = SocketAddr::from(([0, 0, 0, 0], PORT));
 
     // 启动服务器（后台线程）
     let _server = tokio::spawn(async move {
