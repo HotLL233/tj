@@ -1,12 +1,11 @@
-"""FastAPI application entry point."""
+"""工作量统计工具 — FastAPI entry point."""
 import os
 import sys
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from starlette.routing import Route
+from fastapi.responses import FileResponse, Response
 
 from database import init_db
 from api import api_router
@@ -14,7 +13,6 @@ from api import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan: initialize database on startup."""
     init_db()
     yield
 
@@ -22,11 +20,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="工作量统计 API",
     description="Workload statistics management system",
-    version="1.7.0",
+    version="0.2.3",
     lifespan=lifespan,
 )
 
-# CORS - allow all origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,30 +32,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register API routes
 app.include_router(api_router)
 
-# Production mode: serve static files + SPA fallback
+# 静态文件路径
 if getattr(sys, "frozen", False):
     static_dir = os.path.join(sys._MEIPASS, "static")
 else:
     static_dir = os.path.join(os.path.dirname(__file__), "static")
 
-if os.path.isdir(static_dir) and os.path.isfile(os.path.join(static_dir, "index.html")):
-    # Serve assets directly
-    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+has_static = os.path.isdir(static_dir) and os.path.isfile(os.path.join(static_dir, "index.html"))
+index_path = os.path.join(static_dir, "index.html") if has_static else None
+assets_dir = os.path.join(static_dir, "assets") if has_static else None
 
-    # SPA fallback: serve index.html for all non-API routes
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        file_path = os.path.join(static_dir, full_path)
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
-        return FileResponse(os.path.join(static_dir, "index.html"))
+if has_static and os.path.isdir(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
-    @app.get("/")
-    async def serve_root():
-        return FileResponse(os.path.join(static_dir, "index.html"))
+
+@app.middleware("http")
+async def spa_fallback_middleware(request: Request, call_next):
+    """SPA fallback: 非 API 路径返回 index.html."""
+    response = await call_next(request)
+
+    # 只有静态目录存在且有 index.html 时才做 fallback
+    if not index_path:
+        return response
+
+    # 404 + 非 API + non-asset → 返回 index.html
+    if response.status_code == 404 and not request.url.path.startswith("/api"):
+        return FileResponse(index_path)
+
+    return response
+
+
+@app.get("/")
+async def serve_root():
+    """根路径返回 index.html."""
+    if index_path:
+        return FileResponse(index_path)
+    return Response('{"message":"API running","docs":"/docs"}', media_type="application/json")
 
 
 if __name__ == "__main__":
