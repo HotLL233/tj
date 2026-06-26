@@ -1,4 +1,4 @@
-﻿// 打包模式：隐藏控制台窗口（cargo build --release）
+// 打包模式：隐藏控制台窗口（cargo build --release）
 // 开发模式：cargo run --features console 保留控制台
 #![cfg_attr(not(feature = "console"), windows_subsystem = "windows")]
 
@@ -22,29 +22,6 @@ fn get_data_dir() -> std::path::PathBuf {
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()))
         .unwrap_or_else(|| std::path::PathBuf::from("."))
-}
-
-/// Shared WHERE clause builder for stats/record queries.
-/// Returns (where_sql, params_vec). Caller appends to "wr.deleted_at IS NULL".
-pub fn build_where(start: Option<&str>, end: Option<&str>, group_id: Option<i64>) -> (String, Vec<Box<dyn rusqlite::types::ToSql>>) {
-    let mut clauses = vec!["wr.deleted_at IS NULL".to_string()];
-    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![];
-    if let Some(s) = start {
-        let idx = params.len() + 1;
-        clauses.push(format!("wr.recorded_at>=?{}", idx));
-        params.push(Box::new(s.to_string()));
-    }
-    if let Some(e) = end {
-        let idx = params.len() + 1;
-        clauses.push(format!("wr.recorded_at<=?{}", idx));
-        params.push(Box::new(format!("{}T23:59:59", e)));
-    }
-    if let Some(gid) = group_id {
-        let idx = params.len() + 1;
-        clauses.push(format!("pg.id=?{}", idx));
-        params.push(Box::new(gid));
-    }
-    (clauses.join(" AND "), params)
 }
 
 #[tokio::main]

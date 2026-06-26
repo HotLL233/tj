@@ -1,4 +1,4 @@
-﻿use axum::{extract::{Query, State}, Router, routing::get};
+use axum::{extract::{Query, State}, Router, routing::get};
 use axum::response::IntoResponse;
 use axum::http::header;
 use serde::Deserialize;
@@ -18,7 +18,7 @@ pub fn router(pool: DbPool) -> Router {
         .with_state(pool)
 }
 
-/// 0-based column index -> Excel column letter (0=A, 1=B, ...)
+/// 0-based column index → Excel column letter (0=A, 1=B, ...)
 fn _cl(n: u16) -> String {
     let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let mut n = n + 1; // convert to 1-based
@@ -31,13 +31,38 @@ fn _cl(n: u16) -> String {
     result
 }
 
-// Removed unused: parse_instrument(), extract_code()
-// Removed unused: get_method_full_name() (kept as fallback since it's called below)
+fn parse_instrument(project_name: &str) -> (&str, &str, &str) {
+    // Parse instrument code like "HYLY-LC-01(230106)"
+    if let Some(dash_pos) = project_name.find('-') {
+        let after = &project_name[dash_pos + 1..];
+        if after.starts_with("LC") || after.starts_with("GC") {
+            if let Some(code_end) = after.find(|c: char| !c.is_alphanumeric() && c != '-') {
+                let code = &after[..code_end];
+                let suffix = &after[code_end..];
+                let method = &project_name[..dash_pos];
+                let itype = if code.starts_with("LC") { "液相" } else { "气相" };
+                let mb = if suffix.starts_with('(') {
+                    &suffix[1..suffix.len().min(suffix.len().saturating_sub(1))]
+                } else { suffix };
+                return (mb, code, itype);
+            }
+            let code = after;
+            let method = &project_name[..dash_pos];
+            let itype = if code.starts_with("LC") { "液相" } else { "气相" };
+            return (method, code, itype);
+        }
+    }
+    (project_name, "", "其他")
+}
+
+fn extract_code(n: &str) -> &str {
+    n.split('-').next().unwrap_or(n)
+}
 
 use std::collections::HashMap;
 
 // Simple method name lookup map (abbreviated - full version would have 95 entries)
-fn get_method_full_name(_group: &str, project: &str) -> String {
+fn get_method_full_name(group: &str, project: &str) -> String {
     // Use a basic mapping for common methods
     let key = project;
     if key.contains("HYLY-LC-01") { return "HYLY-230106-1-低温8℃-DAD".into(); }
@@ -72,11 +97,6 @@ fn month_bounds(ref_date: &str) -> (String, String) {
     (start, end)
 }
 
-/// Extract a short instrument code from project name like "HYLY-LC-01(230106)"
-fn extract_code(project_name: &str) -> String {
-    project_name.split('-').next().unwrap_or(project_name).to_string()
-}
-
 async fn export_excel(
     State(pool): State<DbPool>,
     Query(q): Query<ExportQuery>,
@@ -94,7 +114,7 @@ async fn export_excel(
         format!("{}年{}月", parts[0], parts[1].trim_start_matches('0'))
     };
 
-    // Query all active projects (group_id parameterized)
+    // Query all active projects
     let mut proj_sql = String::from(
         "SELECT p.id, p.name AS project_name, pg.name AS group_name, pg.sort_order AS gs, p.sort_order AS ps
          FROM projects p JOIN project_groups pg ON p.group_id = pg.id WHERE p.is_active = 1"
@@ -112,7 +132,7 @@ async fn export_excel(
         |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?)),
     )?.collect::<std::result::Result<Vec<_>, _>>()?;
 
-    // Query monthly records (group_id parameterized)
+    // Query monthly records
     let mut rec_sql = String::from(
         "SELECT p.id AS project_id, SUM(wr.quantity) AS qty
          FROM work_records wr JOIN projects p ON wr.project_id = p.id
@@ -135,7 +155,7 @@ async fn export_excel(
         |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
     )?.filter_map(|r| r.ok()).collect();
 
-    // Build lab->code->instrument hierarchy
+    // Build lab→code→instrument hierarchy
     #[derive(Default)]
     struct InstData {
         lc: Vec<(String, String, i64)>,  // (instrument, method, qty)
@@ -145,8 +165,8 @@ async fn export_excel(
     let mut lab_data: HashMap<String, HashMap<String, InstData>> = HashMap::new();
 
     for (pid, pn, gn) in &all_projects {
-        let pc = extract_code(pn);
-        let (_mb, ic, it) = parse_instrument_for_export(pn);
+        let pc = extract_code(pn).to_string();
+        let (mb, ic, it) = parse_instrument(pn);
         let fn_name = get_method_full_name(gn, pn);
         let qty = records.get(pid).copied().unwrap_or(0);
 
@@ -194,8 +214,7 @@ async fn export_excel(
     let mut r = hr + 1;
 
     // Two-pass: first merge all ranges, then write data (merge_range overwrites cells)
-#[allow(dead_code)]
-    #[allow(dead_code)]    struct RangeInfo { start: u32, end: u32, lab: String, code: String, pc_rows: u32, lc_rows: u32, gc_rows: u32 }
+    struct RangeInfo { start: u32, end: u32, lab: String, code: String, pc_rows: u32, lc_rows: u32, gc_rows: u32 }
     let mut ranges: Vec<RangeInfo> = vec![];
 
     for lab_name in &lab_order {
@@ -266,7 +285,7 @@ async fn export_excel(
 
     ws1.set_freeze_panes(hr + 1, 4)?;
 
-    // === Sheet 2: 每日工作量 ===
+    // === Sheet 2-5: 简化版 ===
     let ws2 = wb.add_worksheet();
     ws2.set_name("每日工作量").map_err(|e| AppError::Internal(e.to_string()))?;
     ws2.set_tab_color(Color::RGB(0x43A047));
@@ -327,46 +346,34 @@ async fn export_excel(
         }
     }
 
-    // Removed empty Sheets 3-5 (每周/原始记录/用户统计) - they had no data
+    let ws3 = wb.add_worksheet();
+    ws3.set_name("每周工作量").map_err(|e| AppError::Internal(e.to_string()))?;
+    ws3.set_tab_color(Color::RGB(0xFF9800));
+    ws3.write_with_format(0, 0, "每周工作量（数据同月汇总）", &fh)?;
+    ws3.set_freeze_panes(1, 0)?;
+
+    let ws4 = wb.add_worksheet();
+    ws4.set_name("原始记录").map_err(|e| AppError::Internal(e.to_string()))?;
+    ws4.set_tab_color(Color::RGB(0x9C27B0));
+    ws4.write_with_format(0, 0, "原始记录（同每日工作量）", &fh)?;
+    ws4.set_freeze_panes(1, 0)?;
+
+    let ws5 = wb.add_worksheet();
+    ws5.set_name("用户统计").map_err(|e| AppError::Internal(e.to_string()))?;
+    ws5.set_tab_color(Color::RGB(0x1976D2));
+    ws5.write_with_format(0, 0, "用户统计（同每日工作量）", &fh)?;
+    ws5.set_freeze_panes(1, 0)?;
 
     let mut buf = Cursor::new(Vec::new());
     wb.save_to_writer(&mut buf).map_err(|e| AppError::Internal(e.to_string()))?;
     let data = buf.into_inner();
 
     let filename = format!("attachment; filename*=UTF-8''{}", url_escape::encode_component(&format!("工作量统计_{}.xlsx", month_label)));
-    Ok(axum::response::Response::builder()
+    Ok((
+        axum::response::Response::builder()
             .header(header::CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             .header(header::CONTENT_DISPOSITION, filename)
             .body(axum::body::Body::from(data))
-            .unwrap())
+            .unwrap()
+    ))
 }
-/// Lightweight instrument parsing used by export (inline, avoids dead-code warnings)
-fn parse_instrument_for_export(project_name: &str) -> (&str, &str, &str) {
-    if let Some(dash_pos) = project_name.find('-') {
-        let after = &project_name[dash_pos + 1..];
-        if after.starts_with("LC") || after.starts_with("GC") {
-            if let Some(code_end) = after.find(|c: char| !c.is_alphanumeric() && c != '-') {
-                let code = &after[..code_end];
-                let suffix = &after[code_end..];
-                let _method = &project_name[..dash_pos];
-                let itype = if code.starts_with("LC") { "液相" } else { "气相" };
-                let mb = if suffix.starts_with('(') {
-                    &suffix[1..suffix.len().min(suffix.len().saturating_sub(1))]
-                } else { suffix };
-                return (mb, code, itype);
-            }
-            let code = after;
-            let _method = &project_name[..dash_pos];
-            let itype = if code.starts_with("LC") { "液相" } else { "气相" };
-            return (_method, code, itype);
-        }
-    }
-    (project_name, "", "其他")
-}
-
-
-
-
-
-
-

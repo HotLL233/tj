@@ -110,7 +110,7 @@ def run_tray(app):
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("退出", on_exit),
         )
-        icon = pystray.Icon("workload_tool", image, "工作量统计工具 v0.2.4", menu)
+        icon = pystray.Icon("workload_tool", image, "工作量统计工具 v0.2.5", menu)
         log("Tray icon shown")
         icon.run()
     except Exception as e:

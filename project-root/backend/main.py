@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="工作量统计 API",
     description="Workload statistics management system",
-    version="0.2.4",
+    version="0.2.5",
     lifespan=lifespan,
 )
 

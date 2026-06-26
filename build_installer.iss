@@ -1,12 +1,12 @@
-; 工作量统计工具 v0.2.4 — Inno Setup 安装脚本
+; 工作量统计工具 v0.2.5 — Inno Setup 安装脚本
 
 #define MyAppName "工作量统计工具"
-#define MyAppVersion "0.2.4"
+#define MyAppVersion "0.2.5"
 #define MyAppPublisher "HotLL"
-#define MyAppExeName "工作量统计工具_v0.2.4.exe"
+#define MyAppExeName "工作量统计工具_v0.2.5.exe"
 
 [Setup]
-AppId={{C3D5E7F9-B1A2-4D6E-8C9F-ABCDEF123456}
+AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -14,7 +14,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=D:\桌面\工作量统计工具项目\installer
-OutputBaseFilename=工作量统计工具_v0.2.4_Setup
+OutputBaseFilename=工作量统计工具_v0.2.5_Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -29,7 +29,7 @@ Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.i
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "快捷方式："; Flags: checkedonce
 
 [Files]
-Source: "D:\桌面\工作量统计工具项目\project-root\backend\dist\工作量统计工具_v0.2.4\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\桌面\工作量统计工具项目\project-root\backend\dist\工作量统计工具_v0.2.5\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -41,5 +41,5 @@ Filename: "{app}\{#MyAppExeName}"; Description: "启动 {#MyAppName}"; Flags: no
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\data"
-Type: filesandordirs; Name: "{app}\_internal"
+Type: filesandordirs; Name: "{app}\static"
 Type: dirifempty; Name: "{app}"

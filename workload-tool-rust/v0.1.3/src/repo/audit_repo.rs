@@ -1,4 +1,4 @@
-﻿use crate::db::DbPool;
+use crate::db::DbPool;
 use crate::error::Result;
 use crate::models::audit::AuditLogResponse;
 
@@ -37,4 +37,3 @@ pub fn list(pool: &DbPool, page: i64, page_size: i64) -> Result<(Vec<AuditLogRes
     let items: Vec<AuditLogResponse> = rows.collect::<std::result::Result<Vec<_>, _>>()?;
     Ok((items, count))
 }
-

@@ -1,4 +1,4 @@
-﻿pub mod group;
+pub mod group;
 pub mod project;
 pub mod record;
 pub mod audit;
@@ -35,4 +35,3 @@ pub struct Pagination {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
 }
-

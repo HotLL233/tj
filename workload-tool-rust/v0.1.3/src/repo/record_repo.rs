@@ -1,4 +1,4 @@
-﻿use crate::db::DbPool;
+use crate::db::DbPool;
 use crate::error::Result;
 use crate::models::record::{RecordCreate, RecordResponse, RecordUpdate};
 use crate::repo::audit_repo;
@@ -13,8 +13,8 @@ pub fn list(
     let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![];
 
     if !include_deleted { where_clauses.push("wr.deleted_at IS NULL".to_string()); }
-    if let Some(pid) = project_id { let idx = params.len() + 1; where_clauses.push(format!("wr.project_id=?{}", idx)); params.push(Box::new(pid)); }
-    if let Some(un) = user_name { let idx = params.len() + 1; where_clauses.push(format!("wr.user_name=?{}", idx)); params.push(Box::new(un.to_string())); }
+    if let Some(pid) = project_id { where_clauses.push(format!("wr.project_id={}", pid)); }
+    if let Some(un) = user_name { where_clauses.push("wr.user_name=?1".to_string()); params.push(Box::new(un.to_string())); }
     if let Some(s) = start { let idx = params.len() + 1; where_clauses.push(format!("wr.recorded_at>=?{}", idx)); params.push(Box::new(s.to_string())); }
     if let Some(e) = end { let idx = params.len() + 1; where_clauses.push(format!("wr.recorded_at<=?{}", idx)); params.push(Box::new(format!("{}T23:59:59", e))); }
 
@@ -52,6 +52,7 @@ pub fn list(
 }
 
 /// Internal helper: query a single record on an existing connection.
+/// Avoids grabbing a separate pool connection when called inside a transaction.
 fn get_by_id_on_conn(conn: &rusqlite::Connection, id: i64) -> Result<RecordResponse> {
     conn.query_row(
         "SELECT wr.id, wr.project_id, p.name, pg.name, wr.user_name, wr.quantity,
@@ -94,30 +95,36 @@ pub fn update(pool: &DbPool, id: i64, body: &RecordUpdate, user_name: &str) -> R
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
 
-    // Existence + soft-delete check on same connection
+    // Existence + soft-delete check on same connection (no extra pool round-trip)
     let existing = get_by_id_on_conn(&tx, id)?;
     if existing.deleted_at.is_some() {
         return Err(crate::error::AppError::Validation("记录已被删除，无法编辑".into()));
     }
 
-    // Build dynamic UPDATE with only changed fields in a single statement
-    let mut sets: Vec<&str> = vec![];
-    let mut has_changes = false;
-    if body.user_name.is_some() { sets.push("user_name=?1"); has_changes = true; }
-    if body.quantity.is_some() { sets.push("quantity=?2"); has_changes = true; }
-    if body.recorded_at.is_some() { sets.push("recorded_at=?3"); has_changes = true; }
-    if !has_changes {
-        return Err(crate::error::AppError::Validation("没有需要更新的字段".into()));
+    let mut updated = false;
+    if let Some(ref un) = body.user_name {
+        let rows = tx.execute("UPDATE work_records SET user_name=?1 WHERE id=?2", (un, id))?;
+        if rows == 0 {
+            return Err(crate::error::AppError::NotFound("记录不存在".into()));
+        }
+        updated = true;
     }
-    let set_clause = sets.join(", ");
-    let rows = tx.execute(&format!("UPDATE work_records SET {} WHERE id=?4", set_clause), rusqlite::params![
-        body.user_name,
-        body.quantity,
-        body.recorded_at,
-        id,
-    ])?;
-    if rows == 0 {
-        return Err(crate::error::AppError::NotFound("记录不存在".into()));
+    if let Some(q) = body.quantity {
+        let rows = tx.execute("UPDATE work_records SET quantity=?1 WHERE id=?2", (q, id))?;
+        if rows == 0 {
+            return Err(crate::error::AppError::NotFound("记录不存在".into()));
+        }
+        updated = true;
+    }
+    if let Some(ref dt) = body.recorded_at {
+        let rows = tx.execute("UPDATE work_records SET recorded_at=?1 WHERE id=?2", (dt, id))?;
+        if rows == 0 {
+            return Err(crate::error::AppError::NotFound("记录不存在".into()));
+        }
+        updated = true;
+    }
+    if !updated {
+        return Err(crate::error::AppError::Validation("没有需要更新的字段".into()));
     }
     audit_repo::log_on_conn(&tx, "update", "work_records", Some(id), user_name, "编辑记录")?;
     tx.commit()?;
@@ -174,9 +181,8 @@ pub fn delete_by_user(pool: &DbPool, user_name: &str, start: Option<&str>, end: 
     let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(user_name.to_string())];
     if let Some(s) = start { let i = params.len()+1; sql.push_str(&format!(" AND recorded_at>=?{}",i)); params.push(Box::new(s.to_string())); }
     if let Some(e) = end { let i = params.len()+1; sql.push_str(&format!(" AND recorded_at<=?{}",i)); params.push(Box::new(format!("{}T23:59:59",e))); }
-    let deleted_count = tx.execute(&sql, rusqlite::params_from_iter(params.iter().map(|p| p.as_ref())))?;
-    audit_repo::log_on_conn(&tx, "batch_delete", "work_records", None, user_name, &format!("批量删除 {} 条", deleted_count))?;
+    let count = tx.execute(&sql, rusqlite::params_from_iter(params.iter().map(|p| p.as_ref())))?;
+    audit_repo::log_on_conn(&tx, "batch_delete", "work_records", None, user_name, &format!("批量删除 {} 条", count))?;
     tx.commit()?;
-    Ok(deleted_count as i64)
+    Ok(count as i64)
 }
-

@@ -1,12 +1,12 @@
-; 工作量统计工具 Rust v0.1.2 — Inno Setup 安装脚本
+﻿; 工作量统计工具 (Rust) v0.1.4 — Inno Setup 安装脚本
 
-#define MyAppName "工作量统计工具(Rust)"
-#define MyAppVersion "0.1.2"
+#define MyAppName "工作量统计工具 (Rust)"
+#define MyAppVersion "0.1.4"
 #define MyAppPublisher "HotLL"
-#define MyAppExeName "workload-tool.exe"
+#define MyAppExeName "工作量统计工具.exe"
 
 [Setup]
-AppId={{D6E8F0A2-C4B3-4E7F-9D0A-BCDEF2345678}
+AppId={{D6E8F0A2-C4B3-4E7F-9D0A-BCDEF2345679}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -14,7 +14,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=D:\桌面\工作量统计工具项目\installer
-OutputBaseFilename=工作量统计工具_Rust_v0.1.2_Setup
+OutputBaseFilename=工作量统计工具_Rust_v0.1.4_Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -29,7 +29,7 @@ Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.i
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "快捷方式："; Flags: checkedonce
 
 [Files]
-Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\dist\工作量统计工具_rust_v0.1.2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\桌面\工作量统计工具项目\dist\工作量统计工具\Rust_v0.1.4\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

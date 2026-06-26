@@ -1,9 +1,8 @@
-﻿use axum::{extract::{Query, State}, Json, Router, routing::get};
+use axum::{extract::{Query, State}, Json, Router, routing::get};
 use serde::{Deserialize, Serialize};
 use crate::db::DbPool;
 use crate::error::Result;
 use crate::models::ApiResponse;
-use crate::build_where;
 
 #[derive(Deserialize)]
 pub struct StatsQuery {
@@ -72,10 +71,19 @@ pub fn router(pool: DbPool) -> Router {
         .with_state(pool)
 }
 
+fn build_where(start: Option<&str>, end: Option<&str>, group_id: Option<i64>) -> (String, Vec<String>) {
+    let mut clauses = vec!["wr.deleted_at IS NULL".to_string()];
+    let mut params = vec![];
+    if let Some(s) = start { let i = params.len()+1; clauses.push(format!("wr.recorded_at>=?{}", i)); params.push(s.to_string()); }
+    if let Some(e) = end { let i = params.len()+1; clauses.push(format!("wr.recorded_at<=?{}", i)); params.push(format!("{}T23:59:59", e)); }
+    if let Some(gid) = group_id { let i = params.len()+1; clauses.push(format!("pg.id=?{}", i)); params.push(gid.to_string()); }
+    (clauses.join(" AND "), params)
+}
+
 async fn summary(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> Result<Json<ApiResponse<StatsSummary>>> {
     let (wc, params) = build_where(q.start.as_deref(), q.end.as_deref(), q.group_id);
     let conn = pool.get()?;
-    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
 
     let (tq, tr, uc, pc): (i64, i64, i64, i64) = conn.query_row(
         &format!("SELECT COALESCE(SUM(wr.quantity),0), COUNT(*), COUNT(DISTINCT wr.user_name), COUNT(DISTINCT wr.project_id) FROM work_records wr JOIN projects p ON wr.project_id=p.id JOIN project_groups pg ON p.group_id=pg.id WHERE {}", wc),
@@ -108,7 +116,7 @@ async fn summary(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> Res
 async fn by_user(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> Result<Json<ApiResponse<Vec<UserStats>>>> {
     let (wc, params) = build_where(q.start.as_deref(), q.end.as_deref(), q.group_id);
     let conn = pool.get()?;
-    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
     let mut stmt = conn.prepare(&format!(
         "SELECT wr.user_name, SUM(wr.quantity), COUNT(*) FROM work_records wr JOIN projects p ON wr.project_id=p.id JOIN project_groups pg ON p.group_id=pg.id WHERE {} GROUP BY wr.user_name ORDER BY SUM(wr.quantity) DESC", wc
     ))?;
@@ -121,7 +129,7 @@ async fn by_user(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> Res
 async fn by_project(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> Result<Json<ApiResponse<Vec<ProjectStats>>>> {
     let (wc, params) = build_where(q.start.as_deref(), q.end.as_deref(), q.group_id);
     let conn = pool.get()?;
-    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
     let mut stmt = conn.prepare(&format!(
         "SELECT p.id, p.name, pg.name, SUM(wr.quantity), COUNT(*) FROM work_records wr JOIN projects p ON wr.project_id=p.id JOIN project_groups pg ON p.group_id=pg.id WHERE {} GROUP BY p.id ORDER BY pg.sort_order, p.sort_order", wc
     ))?;
@@ -135,7 +143,7 @@ async fn by_project(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> 
 async fn by_type(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> Result<Json<ApiResponse<Vec<TypeStats>>>> {
     let (wc, params) = build_where(q.start.as_deref(), q.end.as_deref(), None);
     let conn = pool.get()?;
-    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
     let sql = format!(
         "SELECT CASE WHEN p.name LIKE '%GC-%' THEN '气相' WHEN p.name LIKE '%LC-%' THEN '液相' ELSE '其他' END AS itype, SUM(wr.quantity), COUNT(*) FROM work_records wr JOIN projects p ON wr.project_id=p.id JOIN project_groups pg ON p.group_id=pg.id WHERE {} GROUP BY itype", wc
     );
@@ -149,7 +157,7 @@ async fn by_type(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> Res
 async fn by_instrument(State(pool): State<DbPool>, Query(q): Query<StatsQuery>) -> Result<Json<ApiResponse<Vec<InstrumentStats>>>> {
     let (wc, params) = build_where(q.start.as_deref(), q.end.as_deref(), None);
     let conn = pool.get()?;
-    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|s| s as &dyn rusqlite::types::ToSql).collect();
     let mut stmt = conn.prepare(&format!(
         "SELECT SUBSTR(p.name, INSTR(p.name,'-')+1) AS instrument, CASE WHEN p.name LIKE '%GC-%' THEN '气相' WHEN p.name LIKE '%LC-%' THEN '液相' ELSE '其他' END AS instrument_type, SUM(wr.quantity), COUNT(*), COUNT(DISTINCT wr.user_name) FROM work_records wr JOIN projects p ON wr.project_id=p.id JOIN project_groups pg ON p.group_id=pg.id WHERE (p.name LIKE '%LC-%' OR p.name LIKE '%GC-%') AND {} GROUP BY instrument ORDER BY instrument", wc
     ))?;

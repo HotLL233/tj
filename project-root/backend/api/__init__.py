@@ -12,7 +12,7 @@ api_router = APIRouter(prefix="/api")
 
 @api_router.get("/version")
 def api_version():
-    return {"version": "0.2.4"}
+    return {"version": "0.2.5"}
 
 api_router.include_router(groups_router)
 api_router.include_router(projects_router)
