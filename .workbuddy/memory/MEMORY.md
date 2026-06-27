@@ -46,4 +46,8 @@ workload-tool-rust/
     tray.rs          — 系统托盘
 project-root/
   frontend/src/api/client.ts — 前端 API 客户端（baseURL: /api）
+
+## 打包工具路径
+- **Inno Setup 6.7.2**: `D:/APP/Inno Setup 6/ISCC.exe`
+- 编译命令: `"D:/APP/Inno Setup 6/ISCC.exe" build_installer.iss`
 ```

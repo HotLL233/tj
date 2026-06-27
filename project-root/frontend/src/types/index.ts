@@ -33,6 +33,24 @@ export interface WorkRecord {
   deleted_at: string | null;
 }
 
+// --- Sample Record ---
+export interface SampleRecord {
+  id: number;
+  project_id: number;
+  project_name: string;
+  group_id: number;
+  group_name: string;
+  user_name: string;
+  sample_name: string;
+  sample_count: number;
+  unit: string;
+  batch_no: string;
+  notes: string;
+  submitted_at: string;
+  created_at: string;
+  deleted_at: string | null;
+}
+
 // --- Audit Log ---
 export interface AuditLog {
   id: number;
@@ -101,9 +119,30 @@ export interface ApiResponse<T = unknown> {
   message: string;
 }
 
+export interface SampleStats {
+  total_count: number;
+  total_samples: number;
+  by_group: { group_name: string; count: number; total_samples: number }[];
+  by_project: { project_name: string; group_name: string; count: number; total_samples: number }[];
+  by_user: { user_name: string; count: number; total_samples: number }[];
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
   page: number;
   page_size: number;
+}
+
+// --- Import Result (Excel导入返回结果) ---
+export interface ImportResult {
+  success: boolean;
+  total_rows_read: number;
+  inserted: number;
+  updated: number;
+  skipped: number;
+  sheet_name: string;
+  columns_found: string[];
+  errors: string[];
+  warnings: string[];
 }

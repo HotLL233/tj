@@ -2,11 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, Button, CircularProgress, Alert,
-  FormControl, InputLabel, Select, MenuItem, Chip,
+  FormControl, InputLabel, Select, MenuItem, Chip, Snackbar,
   useMediaQuery, useTheme, IconButton, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, Grid,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -24,7 +25,7 @@ import StatsCards from '../components/StatsCards';
 import DateRangePicker from '../components/DateRangePicker';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getStatsSummary, getStatsByUser, getStatsByProject, getStatsByType, getStatsByInstrument, exportExcel, getGroups, getRecords, updateRecord, deleteRecord, deleteRecordsByUser } from '../api/client';
-import type { StatsSummary, UserStats, ProjectStats, TypeStats, InstrumentStats, ProjectGroup, StatsDetail, WorkRecord } from '../types';
+import type { StatsSummary, UserStats, ProjectStats, TypeStats, InstrumentStats, ProjectGroup, StatsDetail, WorkRecord, ImportResult } from '../types';
 
 dayjs.extend(isoWeek);
 export type TabValue = 'week' | 'month' | 'user' | 'project' | 'type' | 'instrument' | 'user-log';
@@ -46,6 +47,10 @@ const StatsPage: React.FC = () => {
   const [edo, setEdo] = useState(false); const [ef, setEf] = useState({ id: 0, user_name: '', quantity: 0, recorded_at: '' }); const [ee, setEe] = useState('');
   const [duo, setDuo] = useState(false); const [dun, setDun] = useState(''); const [dul, setDul] = useState(false);
   const [sdr, setSdr] = useState<WorkRecord | null>(null);
+  // 导入结果独立状态，不受分类标签切换影响
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importErr, setImportErr] = useState('');
 
   const lg = async () => { try { const r = await getGroups(); if (r.code === 0) setGs(r.data as ProjectGroup[]); } catch {} };
   useEffect(() => { lg(); }, []);
@@ -55,6 +60,8 @@ const StatsPage: React.FC = () => {
   useEffect(() => { ld2(); }, [ld2]);
   useEffect(() => { (async () => { try { const r = await getStatsSummary({ start: si, end: ei, group_by: 'week' }); if (r.code === 0) setSm(r.data as StatsSummary); } catch {} })(); }, [si, ei]);
   const hx = async () => { try { const b = await exportExcel({ start: si, end: ei, group_id: gf || undefined }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `工作量统计_${s}_${e}.xlsx`; a.click(); URL.revokeObjectURL(u); } catch { setEr('导出失败'); } };
+  const [importing, setImporting] = useState(false);
+  const hi = async (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (!f) return; setImporting(true); setImportErr(''); setImportResult(null); try { const fd = new FormData(); fd.append('file', f); const r = await fetch('/api/import/excel', { method: 'POST', body: fd }); const d = await r.json(); if (d.code === 0 && d.data) { const ir = d.data as ImportResult; setImportResult(ir); setImportOpen(true); setEr(''); setSm(null as any); lul(ulp); } else { setImportErr(d.message || '导入失败'); setImportOpen(true); setEr(d.message); } } catch { setImportErr('导入失败，请检查网络和文件格式'); setImportOpen(true); setEr('导入失败'); } finally { setImporting(false); e.target.value = ''; } };
   const oed = (r: WorkRecord) => { setEf({ id: r.id, user_name: r.user_name, quantity: r.quantity, recorded_at: dayjs(r.recorded_at).format('YYYY-MM-DDTHH:mm') }); setEe(''); setEdo(true); };
   const hes = async () => { if (!ef.user_name.trim()) { setEe('请输入用户名'); return; } if (ef.quantity < 1) { setEe('数量必须大于0'); return; } try { const r = await updateRecord(ef.id, { user_name: ef.user_name, quantity: ef.quantity, recorded_at: dayjs(ef.recorded_at).format('YYYY-MM-DDTHH:mm:ss') }); if (r.code === 0) { setEdo(false); lul(ulp); } else setEe(r.message); } catch { setEe('保存失败'); } };
   const odu = (n: string) => { setDun(n); setDuo(true); };
@@ -72,6 +79,29 @@ const StatsPage: React.FC = () => {
   {ac === 'user-log' && (<Box><Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}><FormControl size="small" sx={{ minWidth: 150 }}><InputLabel>筛选用户</InputLabel><Select value={uf} label="筛选用户" onChange={x => { setUf(x.target.value); setUlp(1); }} sx={{ borderRadius: R }}><MenuItem value="">全部用户</MenuItem>{[...new Set(ul.map(r => r.user_name))].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}</Select></FormControl><Typography variant="body2" color="text.secondary">共 {ult} 条</Typography></Box>{ull ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box> : <><TableContainer component={Paper} className="table-responsive" sx={tablePaperSx}><Table size="small"><TableHead><TableRow><TableCell sx={{ fontWeight: 600 }}>序号</TableCell><TableCell sx={{ fontWeight: 600 }}>日期时间</TableCell><TableCell sx={{ fontWeight: 600 }}>用户名</TableCell><TableCell sx={{ fontWeight: 600 }}>实验室</TableCell><TableCell sx={{ fontWeight: 600 }}>项目</TableCell><TableCell align="right" sx={{ fontWeight: 600 }}>数量</TableCell><TableCell sx={{ fontWeight: 600 }}>操作</TableCell></TableRow></TableHead><TableBody>{ul.length === 0 ? <TableRow><TableCell colSpan={7} align="center">暂无数据</TableCell></TableRow> : ul.map((r, i) => (<TableRow key={r.id} hover><TableCell>{(ulp - 1) * PS + i + 1}</TableCell><TableCell sx={{ whiteSpace: 'nowrap' }}>{r.recorded_at}</TableCell><TableCell>{r.user_name}</TableCell><TableCell>{r.group_name}</TableCell><TableCell>{r.project_name}</TableCell><TableCell align="right"><Chip label={r.quantity} size="small" sx={chipSx} /></TableCell><TableCell><IconButton size="small" onClick={() => oed(r)} title="编辑" sx={{ color: '#667eea' }}><EditIcon fontSize="small" /></IconButton><IconButton size="small" color="error" onClick={() => setSdr(r)} title="删除本条记录"><DeleteIcon fontSize="small" /></IconButton></TableCell></TableRow>))}</TableBody></Table></TableContainer>{ult > PS && (<Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 1 }}><Button size="small" disabled={ulp <= 1} onClick={() => lul(ulp - 1)}>上一页</Button><Typography variant="body2" sx={{ alignSelf: 'center' }}>{ulp} / {Math.max(1, Math.ceil(ult / PS))}</Typography><Button size="small" disabled={ulp * PS >= ult} onClick={() => lul(ulp + 1)}>下一页</Button></Box>)}</>}</Box>)}
   </Box>}</Box>); };
 
-  return (<Box><Typography variant="h5" fontWeight={700} sx={{ mb: 3, px: 1, background: 'linear-gradient(135deg, #00897b, #43a047)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>统计分析</Typography>{sm && <StatsCards summary={sm} onCardClick={x => { setAc(x); setEr(''); }} />}<Box sx={{ mb: 3, px: 1 }}><DateRangePicker startDate={s} endDate={e} onStartChange={setS} onEndChange={setE} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}><Button variant="contained" startIcon={<DownloadIcon />} onClick={hx} size="small" sx={{ borderRadius: R, background: 'linear-gradient(135deg, #00897b, #43a047)', boxShadow: '0 4px 14px rgba(0,137,123,0.3)', '&:hover': { background: 'linear-gradient(135deg, #00796b, #388e3c)' } }}>导出 Excel</Button></Box></Box>{ac ? cct() : cg()}<Dialog open={edo} onClose={() => setEdo(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: R } }}><DialogTitle sx={{ fontWeight: 700 }}>编辑记录</DialogTitle><DialogContent>{ee && <Alert severity="error" sx={{ mb: 2, borderRadius: R }}>{ee}</Alert>}<TextField label="用户名" fullWidth value={ef.user_name} onChange={x => setEf({ ...ef, user_name: x.target.value })} sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }} /><TextField label="数量" type="number" fullWidth value={ef.quantity} onChange={x => setEf({ ...ef, quantity: Number(x.target.value) })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} inputProps={{ min: 1 }} /><TextField label="日期时间" type="datetime-local" fullWidth value={ef.recorded_at} onChange={x => setEf({ ...ef, recorded_at: x.target.value })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} InputLabelProps={{ shrink: true }} /></DialogContent><DialogActions><Button onClick={() => setEdo(false)}>取消</Button><Button onClick={hes} variant="contained">保存</Button></DialogActions></Dialog><ConfirmDialog open={duo} title="删除用户记录" message={`确定要删除用户「${dun}」在所选日期范围内的所有记录吗？`} confirmText="删除" cancelText="取消" onConfirm={hdu} onCancel={() => setDuo(false)} /><ConfirmDialog open={!!sdr} title="删除记录" message={`确定要删除「${sdr?.user_name ?? ''}」的这条记录吗？（数量: ${sdr?.quantity ?? 0}）`} confirmText="删除" cancelText="取消" onConfirm={hsr} onCancel={() => setSdr(null)} /></Box>);
+  return (<Box><Typography variant="h5" fontWeight={700} sx={{ mb: 3, px: 1, background: 'linear-gradient(135deg, #00897b, #43a047)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>统计分析</Typography>{sm && <StatsCards summary={sm} onCardClick={x => { setAc(x); setEr(''); }} />}<Box sx={{ mb: 3, px: 1 }}><DateRangePicker startDate={s} endDate={e} onStartChange={setS} onEndChange={setE} /><Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}><Button variant="contained" startIcon={<DownloadIcon />} onClick={hx} size="small" sx={{ borderRadius: R, background: 'linear-gradient(135deg, #00897b, #43a047)', boxShadow: '0 4px 14px rgba(0,137,123,0.3)', '&:hover': { background: 'linear-gradient(135deg, #00796b, #388e3c)' } }}>导出 Excel</Button><Button variant="outlined" component="label" startIcon={<UploadFileIcon />} size="small" disabled={importing} sx={{ ml: 1, borderRadius: R }}>{importing ? '导入中...' : '导入 Excel'}<input type="file" accept=".xlsx" hidden onChange={hi} /></Button></Box></Box>
+    {/* 导入结果即时反馈区 — 无需点击分类即可查看 */}
+    {importing && <Alert severity="info" sx={{ mb: 2, borderRadius: R }}>正在解析 Excel 文件并导入数据...</Alert>}
+    {importResult && (
+      <Alert severity={importResult.success ? 'success' : 'warning'} sx={{ mb: 2, borderRadius: R }} onClose={() => setImportResult(null)}>
+        <Typography variant="subtitle2" fontWeight={700}>{importResult.success ? '导入完成' : '导入完成（有警告）'}</Typography>
+        <Box component="ul" sx={{ mt: 0.5, mb: 0, pl: 2, '& li': { fontSize: '0.875rem' } }}>
+          {importResult.inserted > 0 && <li>新增 <strong>{importResult.inserted}</strong> 条记录</li>}
+          {importResult.updated > 0 && <li>累加更新 <strong>{importResult.updated}</strong> 条记录</li>}
+          {importResult.skipped > 0 && <li>跳过 <strong>{importResult.skipped}</strong> 行无效数据</li>}
+          {importResult.warnings.map((w, i) => <li key={i} style={{ color: '#e65100' }}>{w}</li>)}
+          {importResult.errors.map((e, i) => <li key={i} style={{ color: '#c62828' }}>{e}</li>)}
+          <li style={{ color: '#666', fontSize: '0.8rem' }}>工作表: {importResult.sheet_name} | 检测列: {importResult.columns_found.join(', ') || '无'}</li>
+        </Box>
+      </Alert>
+    )}
+    {importErr && !importResult && <Alert severity="error" sx={{ mb: 2, borderRadius: R }} onClose={() => setImportErr('')}>{importErr}</Alert>}
+    {ac ? cct() : cg()}
+    <Snackbar open={importOpen} autoHideDuration={4000} onClose={() => setImportOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Alert severity={importResult?.success ? 'success' : 'error'} sx={{ borderRadius: R }} onClose={() => setImportOpen(false)}>
+        {importResult ? importResult.success ? `成功: 新增${importResult.inserted}条，更新${importResult.updated}条` : importResult.errors.join('; ') : importErr}
+      </Alert>
+    </Snackbar>
+    <Dialog open={edo} onClose={() => setEdo(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: R } }}><DialogTitle sx={{ fontWeight: 700 }}>编辑记录</DialogTitle><DialogContent>{ee && <Alert severity="error" sx={{ mb: 2, borderRadius: R }}>{ee}</Alert>}<TextField label="用户名" fullWidth value={ef.user_name} onChange={x => setEf({ ...ef, user_name: x.target.value })} sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }} /><TextField label="数量" type="number" fullWidth value={ef.quantity} onChange={x => setEf({ ...ef, quantity: Number(x.target.value) })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} inputProps={{ min: 1 }} /><TextField label="日期时间" type="datetime-local" fullWidth value={ef.recorded_at} onChange={x => setEf({ ...ef, recorded_at: x.target.value })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} InputLabelProps={{ shrink: true }} /></DialogContent><DialogActions><Button onClick={() => setEdo(false)}>取消</Button><Button onClick={hes} variant="contained">保存</Button></DialogActions></Dialog><ConfirmDialog open={duo} title="删除用户记录" message={`确定要删除用户「${dun}」在所选日期范围内的所有记录吗？`} confirmText="删除" cancelText="取消" onConfirm={hdu} onCancel={() => setDuo(false)} /><ConfirmDialog open={!!sdr} title="删除记录" message={`确定要删除「${sdr?.user_name ?? ''}」的这条记录吗？（数量: ${sdr?.quantity ?? 0}）`} confirmText="删除" cancelText="取消" onConfirm={hsr} onCancel={() => setSdr(null)} /></Box>);
 };
 export default StatsPage;

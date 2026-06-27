@@ -1,17 +1,64 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Fab, CircularProgress, Alert, TextField, InputAdornment } from '@mui/material';
-import BarChartIcon from '@mui/icons-material/BarChart'; import SearchIcon from '@mui/icons-material/Search';
-import GroupCard from '../components/GroupCard'; import { getGroups } from '../api/client'; import type { ProjectGroup } from '../types';
+import { Box, Typography, Paper } from '@mui/material';
+import ScienceIcon from '@mui/icons-material/Science';
+import BarChartIcon from '@mui/icons-material/BarChart';
 
 const R = '2px';
 const HomePage: React.FC = () => {
-  const n = useNavigate(); const [gs, setGs] = useState<ProjectGroup[]>([]); const [ld, setLd] = useState(true); const [er, setEr] = useState(''); const [sq, setSq] = useState('');
-  const lg = async () => { setLd(true); setEr(''); try { const r = await getGroups(); if (r.code === 0) setGs(r.data as ProjectGroup[]); else setEr(r.message); } catch { setEr('加载失败'); } finally { setLd(false); } };
-  useEffect(() => { lg(); }, []);
-  const fg = useMemo(() => { if (!sq.trim()) return gs; const q = sq.trim().toLowerCase(); return gs.filter(g => g.name.toLowerCase().includes(q)); }, [gs, sq]);
-  if (ld) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}><CircularProgress /></Box>;
-  if (er) return <Box sx={{ p: 2 }}><Alert severity="error" action={<Typography component="button" onClick={lg} sx={{ cursor: 'pointer', border: 'none', bgcolor: 'transparent', color: 'inherit', textDecoration: 'underline' }}>重试</Typography>}>{er}</Alert></Box>;
-  return (<Box><Box sx={{ position: 'relative', borderRadius: R, p: { xs: 3, md: 5 }, mb: 4, background: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)', overflow: 'hidden' }}><Box sx={{ position: 'absolute', top: -40, right: -30, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} /><Box sx={{ position: 'absolute', bottom: -50, left: -20, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} /><Box sx={{ position: 'absolute', top: 20, left: '40%', width: 60, height: 60, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} /><Typography variant="h4" component="h1" fontWeight={800} sx={{ color: '#fff', mb: 1, position: 'relative', zIndex: 1 }}>项目分组</Typography><Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.85)', position: 'relative', zIndex: 1, mb: 2 }}>选择实验室开始录入工作量数据</Typography><TextField size="small" placeholder="搜索实验室..." value={sq} onChange={e => setSq(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'rgba(255,255,255,0.6)' }} /></InputAdornment> }} sx={{ position: 'relative', zIndex: 1, maxWidth: 400, '& .MuiOutlinedInput-root': { bgcolor: 'rgba(255,255,255,0.15)', borderRadius: R, color: '#fff', '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& input::placeholder': { color: 'rgba(255,255,255,0.5)' } } }} /></Box>{fg.length === 0 ? <Box sx={{ textAlign: 'center', py: 8 }}><Typography variant="h6" color="text.secondary" gutterBottom>{sq ? '未找到匹配的实验室' : '暂无项目分组'}</Typography><Typography variant="body2" color="text.secondary">{sq ? '请尝试其他关键词' : '请前往管理页面创建分组和项目'}</Typography></Box> : <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' }, gap: 2.5, px: { xs: 0.5, sm: 1 } }}>{fg.map(g => <GroupCard key={g.id} group={g} onClick={() => n(`/entry/${g.id}`)} />)}</Box>}<Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1, mt: 3, justifyContent: 'center' }}><Fab variant="extended" size="small" onClick={() => n('/stats')} sx={{ background: 'linear-gradient(135deg,#667eea,#764ba2)', color: '#fff', boxShadow: '0 4px 14px rgba(102,126,234,0.4)' }}><BarChartIcon sx={{ mr: 0.5 }} />查看统计</Fab></Box><Fab onClick={() => n('/stats')} sx={{ display: { xs: 'flex', md: 'none' }, position: 'fixed', bottom: 72, right: 16, zIndex: 100, background: 'linear-gradient(135deg,#667eea,#764ba2)', color: '#fff', boxShadow: '0 4px 16px rgba(102,126,234,0.5)' }}><BarChartIcon /></Fab></Box>);
+  const n = useNavigate();
+
+  return (
+    <Box sx={{ maxWidth: 900, mx: 'auto', mt: { xs: 2, md: 6 } }}>
+      {/* Header */}
+      <Box sx={{ textAlign: 'center', mb: 5 }}>
+        <Typography variant="h3" fontWeight={800} sx={{ background: 'linear-gradient(135deg,#667eea,#764ba2)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
+          工作量统计工具
+        </Typography>
+        <Typography variant="body1" color="text.secondary">选择功能入口，开始操作</Typography>
+      </Box>
+
+      {/* Two big cards */}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {/* 实验室送样 */}
+        <Paper
+          elevation={0}
+          onClick={() => n('/sample')}
+          sx={{
+            flex: '1 1 240px', maxWidth: 320, p: { xs: 3, md: 4 }, borderRadius: R, cursor: 'pointer',
+            background: 'linear-gradient(145deg,#fff3e0,#ffe0b2)',
+            border: '2px solid #e65100',
+            boxShadow: '0 8px 32px rgba(230,81,0,0.12)',
+            transition: 'all 0.2s',
+            '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(230,81,0,0.2)' },
+            textAlign: 'center',
+          }}
+        >
+          <ScienceIcon sx={{ fontSize: 56, color: '#e65100', mb: 1.5 }} />
+          <Typography variant="h5" fontWeight={700} color="#e65100" gutterBottom>实验室送样</Typography>
+          <Typography variant="body2" color="text.secondary">送样录入 · 查看记录</Typography>
+        </Paper>
+
+        {/* 工作量录入 */}
+        <Paper
+          elevation={0}
+          onClick={() => n('/workload')}
+          sx={{
+            flex: '1 1 240px', maxWidth: 320, p: { xs: 3, md: 4 }, borderRadius: R, cursor: 'pointer',
+            background: 'linear-gradient(145deg,#e8eaf6,#c5cae9)',
+            border: '2px solid #283593',
+            boxShadow: '0 8px 32px rgba(40,53,147,0.12)',
+            transition: 'all 0.2s',
+            '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(40,53,147,0.2)' },
+            textAlign: 'center',
+          }}
+        >
+          <BarChartIcon sx={{ fontSize: 56, color: '#283593', mb: 1.5 }} />
+          <Typography variant="h5" fontWeight={700} color="#283593" gutterBottom>工作量录入</Typography>
+          <Typography variant="body2" color="text.secondary">检测录入 · 统计 · 管理</Typography>
+        </Paper>
+      </Box>
+    </Box>
+  );
 };
 export default HomePage;

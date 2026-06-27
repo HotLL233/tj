@@ -5,6 +5,8 @@ import type {
   ProjectGroup,
   Project,
   WorkRecord,
+  SampleRecord,
+  SampleStats,
   AuditLog,
   StatsSummary,
   UserStats,
@@ -163,5 +165,50 @@ export const getAuditLogs = (params?: {
   page_size?: number;
 }): Promise<ApiResponse<PaginatedResponse<AuditLog>>> =>
   client.get('/audit-logs', { params }).then((r) => r.data);
+
+// --- Samples ---
+export const getSamples = (params?: {
+  group_id?: number;
+  user_name?: string;
+  start?: string;
+  end?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<ApiResponse<PaginatedResponse<SampleRecord>>> =>
+  client.get('/samples', { params }).then((r) => r.data);
+
+export const getSample = (id: number): Promise<ApiResponse<SampleRecord>> =>
+  client.get(`/samples/${id}`).then((r) => r.data);
+
+export const createSample = (data: {
+  project_id: number;
+  user_name: string;
+  sample_name: string;
+  sample_count: number;
+  unit?: string;
+  batch_no?: string;
+  notes?: string;
+  submitted_at: string;
+}): Promise<ApiResponse<SampleRecord>> =>
+  client.post('/samples', data).then((r) => r.data);
+
+export const updateSample = (id: number, data: {
+  sample_name?: string;
+  sample_count?: number;
+  unit?: string;
+  batch_no?: string;
+  notes?: string;
+  submitted_at?: string;
+}): Promise<ApiResponse<SampleRecord>> =>
+  client.put(`/samples/${id}`, data).then((r) => r.data);
+
+export const deleteSample = (id: number): Promise<ApiResponse<null>> =>
+  client.delete(`/samples/${id}`).then((r) => r.data);
+
+export const restoreSample = (id: number): Promise<ApiResponse<SampleRecord>> =>
+  client.post(`/samples/restore/${id}`).then((r) => r.data);
+
+export const getSampleStats = (params?: { start?: string; end?: string }): Promise<ApiResponse<SampleStats>> =>
+  client.get('/samples/stats', { params }).then((r) => r.data);
 
 export default client;

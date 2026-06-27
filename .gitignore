@@ -28,6 +28,7 @@ installer/
 
 # Rust
 workload-tool/target/
+workload-tool-rust/*/target/
 *.rlib
 *.rmeta
 
