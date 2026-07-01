@@ -72,7 +72,7 @@ const SampleListPage: React.FC = () => {
   return (
     <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1.5 }}>
-        <IconButton onClick={() => navigate('/')} sx={{ bgcolor: 'rgba(30,136,229,0.08)', '&:hover': { bgcolor: 'rgba(30,136,229,0.15)' } }}>
+        <IconButton onClick={() => navigate('/sample')} sx={{ bgcolor: 'rgba(30,136,229,0.08)', '&:hover': { bgcolor: 'rgba(30,136,229,0.15)' } }}>
           <ArrowBackIcon sx={{ color: '#1e88e5' }} />
         </IconButton>
         <Typography variant="h5" fontWeight={700}>送样记录</Typography>

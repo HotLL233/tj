@@ -15,7 +15,7 @@ const SamplePortal: React.FC = () => {
 
   return (<Box>
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-      <IconButton onClick={() => n('/')} sx={{ bgcolor: 'rgba(230,81,0,0.08)', '&:hover': { bgcolor: 'rgba(230,81,0,0.15)' } }}>
+      <IconButton onClick={() => n(-1)} sx={{ bgcolor: 'rgba(230,81,0,0.08)', '&:hover': { bgcolor: 'rgba(230,81,0,0.15)' } }}>
         <ArrowBackIcon sx={{ color: '#e65100' }} />
       </IconButton>
       <Box><Typography variant="h5" fontWeight={700} color="#e65100">实验室送样</Typography><Typography variant="body2" color="text.secondary">选择实验室，开始送样录入</Typography></Box>

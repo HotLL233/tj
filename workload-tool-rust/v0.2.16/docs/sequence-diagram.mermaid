@@ -1,0 +1,44 @@
+sequenceDiagram
+    actor User
+    participant Dialog as ProjectDialog
+    participant MP as ManagePage
+    participant API as client.ts
+    participant H as project_handler
+    participant R as project_repo
+    participant DB as SQLite
+
+    Note over User,DB: === 项目创建（含关联字段） ===
+
+    User->>Dialog: 填写表单 + 选择关联实验室/方法
+    Dialog->>MP: setPf({...pf, associated_lab_ids, associated_method_ids})
+    User->>Dialog: 点击"保存"
+    Dialog->>MP: hps()
+    MP->>API: createProject({..., associated_lab_ids, associated_method_ids})
+    API->>H: POST /api/projects
+    H->>H: Json~ProjectCreate~ 反序列化
+    H->>R: create(pool, &body)
+    R->>DB: INSERT INTO projects (group_id, name, ..., associated_lab_ids, associated_method_ids) VALUES (...)
+    DB-->>R: last_insert_rowid
+    R->>DB: SELECT ... FROM projects WHERE id=?
+    DB-->>R: row
+    R->>R: row_to_project() 读取 associated_lab_ids, associated_method_ids
+    R-->>H: ProjectResponse
+    H-->>API: ApiResponse~ProjectResponse~
+    API-->>MP: data
+    MP->>MP: lp() 刷新, setPd(false)
+
+    Note over User,DB: === Methods 卡片分组展示 ===
+
+    User->>MP: 点击"检测方法管理"卡片
+    MP->>MP: setTb('methods')
+    MP->>MP: ps.filter(p => p.method_type !== '研发项目')
+    MP->>MP: 按 group_name 分组
+    MP->>MP: 渲染 Accordion 组件
+    User->>MP: 点击 Accordion 展开/折叠
+
+    Note over User,DB: === 级联过滤 ===
+
+    User->>MP: 选择关联实验室 (多选)
+    MP->>MP: selectedLabIds 更新
+    MP->>MP: filteredMethods = ps.filter(p => selectedLabIds.includes(p.group_id) && p.method_type !== '研发项目')
+    MP->>MP: 关联方法 Autocomplete options 更新

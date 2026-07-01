@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, IconButton, Button, BottomNavigation, BottomNavigationAction, Drawer, List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, useMediaQuery, useTheme, Box, Container } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Button, BottomNavigation, BottomNavigationAction, Drawer, List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, useMediaQuery, useTheme, Box, Container } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home'; import SettingsIcon from '@mui/icons-material/Settings'; import MenuIcon from '@mui/icons-material/Menu'; import InfoIcon from '@mui/icons-material/Info';
+import { adminLogin } from '../api/client';
 
 const NAV_ITEMS = [
   { label: '主页', path: '/', icon: <HomeIcon /> },
@@ -17,25 +18,80 @@ const Layout: React.FC = () => {
   const navigate = useNavigate(); const location = useLocation(); const theme = useTheme(); const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false); const [aboutOpen, setAboutOpen] = useState(false);
   const [serverVer, setServerVer] = useState('');
+
+  // 管理入口认证状态
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authUser, setAuthUser] = useState('');
+  const [authPass, setAuthPass] = useState('');
+  const [authErr, setAuthErr] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
   const getMobileNav = (): number => { const p = location.pathname; if (p === '/') return 0; if (p.startsWith('/manage')) return 1; return 0; };
   React.useEffect(() => { fetch('/api/version').then(r => r.json()).then(d => setServerVer(d.version || '')).catch(() => {}); }, []);
+
+  // 验证并进入管理页
+  const handleAdminLogin = async () => {
+    if (!authUser.trim()) { setAuthErr('请输入管理员账号'); return; }
+    if (!authPass.trim()) { setAuthErr('请输入管理员密码'); return; }
+    setAuthLoading(true); setAuthErr('');
+    try {
+      const r = await adminLogin({ username: authUser, password: authPass });
+      if (r.code === 0) {
+        sessionStorage.setItem('admin_token', r.data?.token || '');
+        setAuthOpen(false);
+        setAuthUser(''); setAuthPass('');
+        navigate('/manage');
+      } else {
+        setAuthErr(r.message || '验证失败');
+      }
+    } catch {
+      setAuthErr('网络错误，请重试');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleManageClick = () => {
+    // 已有有效token则直接进入
+    const token = sessionStorage.getItem('admin_token');
+    if (token) { navigate('/manage'); return; }
+    // 弹出认证对话框
+    setAuthErr('');
+    setAuthUser('');
+    setAuthPass('');
+    setAuthOpen(true);
+  };
 
   return (<Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
     <AppBar position="sticky" elevation={0} className="glass-appbar" sx={{ zIndex: theme.zIndex.drawer + 1 }}><Toolbar>
       {isMobile && <IconButton edge="start" onClick={() => setDrawerOpen(true)} sx={{ mr: 1, color: '#333' }}><MenuIcon /></IconButton>}
       <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, color: '#333' }}>工作量统计</Typography>
-      {!isMobile && <Box sx={{ display: 'flex', gap: 0.5 }}>{NAV_ITEMS.map(item => { const isActive = location.pathname === item.path; return <Button key={item.path} startIcon={item.icon} onClick={() => navigate(item.path)} className={isActive ? 'nav-pill-active' : 'nav-pill'} sx={{ color: isActive ? '#fff' : '#555' }}>{item.label}</Button>; })}</Box>}
+      {!isMobile && <Box sx={{ display: 'flex', gap: 0.5 }}>{NAV_ITEMS.map(item => { const isActive = location.pathname === item.path; return <Button key={item.path} startIcon={item.icon} onClick={() => item.path === '/manage' ? handleManageClick() : navigate(item.path)} className={isActive ? 'nav-pill-active' : 'nav-pill'} sx={{ color: isActive ? '#fff' : '#555' }}>{item.label}</Button>; })}</Box>}
       <IconButton onClick={() => setAboutOpen(true)} title="关于" sx={{ ml: { xs: 0, md: 1 }, color: '#555' }}><InfoIcon /></IconButton>
     </Toolbar></AppBar>
 
     <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}><Box sx={{ width: 250, pt: 2, bgcolor: '#f8fafc', height: '100%' }}>
       <Typography variant="h6" sx={{ px: 2, pb: 2, fontWeight: 700 }}>工作量统计</Typography>
-      <List>{NAV_ITEMS.map(item => { const isActive = location.pathname === item.path; return <ListItem key={item.path} component="div" onClick={() => { navigate(item.path); setDrawerOpen(false); }} sx={{ cursor: 'pointer', mx: 1, mb: 0.5, borderRadius: '2px', bgcolor: isActive ? 'rgba(102,126,234,0.12)' : 'transparent' }}><ListItemIcon sx={{ color: isActive ? '#667eea' : undefined }}>{item.icon}</ListItemIcon><ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: isActive ? 700 : 400, color: isActive ? '#667eea' : undefined }} /></ListItem>; })}</List>
+      <List>{NAV_ITEMS.map(item => { const isActive = location.pathname === item.path; return <ListItem key={item.path} component="div" onClick={() => { item.path === '/manage' ? handleManageClick() : navigate(item.path); setDrawerOpen(false); }} sx={{ cursor: 'pointer', mx: 1, mb: 0.5, borderRadius: '2px', bgcolor: isActive ? 'rgba(102,126,234,0.12)' : 'transparent' }}><ListItemIcon sx={{ color: isActive ? '#667eea' : undefined }}>{item.icon}</ListItemIcon><ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: isActive ? 700 : 400, color: isActive ? '#667eea' : undefined }} /></ListItem>; })}</List>
     </Box></Drawer>
 
     <Box component="main" sx={{ flexGrow: 1, pb: isMobile ? 7 : 2, pt: 2, px: { xs: 1, sm: 2, md: 3 } }}><Container maxWidth="lg" disableGutters={isMobile}><Outlet /></Container></Box>
 
-    {isMobile && <BottomNavigation value={getMobileNav()} onChange={(_e, v: number) => { if (v === 0) navigate('/'); else navigate('/manage'); }} className="glass-bottom-nav" sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: theme.zIndex.appBar, borderTop: '1px solid rgba(0,0,0,0.06)' }}>{MOBILE_NAV.map((item, i) => <BottomNavigationAction key={i} label={item.label} icon={item.icon} />)}</BottomNavigation>}
+    {isMobile && <BottomNavigation value={getMobileNav()} onChange={(_e, v: number) => { if (v === 0) navigate('/'); else handleManageClick(); }} className="glass-bottom-nav" sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: theme.zIndex.appBar, borderTop: '1px solid rgba(0,0,0,0.06)' }}>{MOBILE_NAV.map((item, i) => <BottomNavigationAction key={i} label={item.label} icon={item.icon} />)}</BottomNavigation>}
+
+    {/* 管理入口认证对话框 */}
+    <Dialog open={authOpen} onClose={() => setAuthOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '2px' } }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>管理员验证</DialogTitle>
+      <DialogContent>
+        {authErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '2px' }}>{authErr}</Alert>}
+        <TextField autoFocus label="管理员账号" fullWidth value={authUser} onChange={e => setAuthUser(e.target.value)} sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: '2px' } }} onKeyDown={e => e.key === 'Enter' && handleAdminLogin()} />
+        <TextField label="管理员密码" type="password" fullWidth value={authPass} onChange={e => setAuthPass(e.target.value)} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: '2px' } }} onKeyDown={e => e.key === 'Enter' && handleAdminLogin()} />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setAuthOpen(false)} sx={{ borderRadius: '2px' }}>取消</Button>
+        <Button onClick={handleAdminLogin} variant="contained" disabled={authLoading} sx={{ borderRadius: '2px' }}>{authLoading ? '验证中...' : '确认'}</Button>
+      </DialogActions>
+    </Dialog>
 
     <Dialog open={aboutOpen} onClose={() => setAboutOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '2px' } }}>
       <DialogTitle sx={{ fontWeight: 700, textAlign: 'center' }}>工作量统计工具</DialogTitle>

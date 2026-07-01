@@ -1,31 +1,114 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, TextField, IconButton, Alert, CircularProgress, Paper, Snackbar, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Box, Typography, TextField, IconButton, CircularProgress, Snackbar, Alert, Chip,
+} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import dayjs from 'dayjs'; import ProjectRow from '../components/ProjectRow'; import { getProjects, createRecord, getGroups } from '../api/client';
-import type { Project, ProjectGroup } from '../types';
-import { useUser } from '../UserContext';
+import { useParams, useNavigate } from 'react-router-dom';
+import type { Project, MethodType } from '../types';
+import { getProjects, createRecord, getMethodTypes } from '../api/client';
+import ProjectRow from '../components/ProjectRow';
 
 const R = '2px';
+
+const typeColorMap: Record<string, 'info'|'success'|'warning'|'primary'|'default'> = {
+  '液相': 'info', '气相': 'success', '理化': 'warning', '检测类型': 'primary',
+};
+
 const EntryPage: React.FC = () => {
-  const { groupId } = useParams<{ groupId: string }>(); const navigate = useNavigate(); const theme = useTheme(); const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [projects, setProjects] = useState<Project[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
-  const [groupName, setGroupName] = useState(''); const { userName, setUserName } = useUser();
-  const [recordedAt, setRecordedAt] = useState(() => dayjs().format('YYYY-MM-DDTHH:mm'));
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
+  const { groupId } = useParams<{ groupId: string }>();
+  const gid = Number(groupId) || 0;
+  const navigate = useNavigate();
 
-  const loadProjects = async () => { setLoading(true); setError(''); try { const [projRes, groupsRes] = await Promise.all([getProjects({ group_id: Number(groupId), active_only: true }), getGroups()]); if (projRes.code === 0) setProjects(projRes.data as Project[]); else setError(projRes.message); if (groupsRes.code === 0) { const gs = groupsRes.data as ProjectGroup[]; const g = gs.find(g => g.id === Number(groupId)); if (g) setGroupName(g.name); } } catch { setError('加载项目失败'); } finally { setLoading(false); } };
-  useEffect(() => { loadProjects(); }, [groupId]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
+  const [dateTime, setDateTime] = useState(() => {
+    const now = new Date();
+    return now.toISOString().slice(0, 16);
+  });
+  const [snackMsg, setSnackMsg] = useState('');
+  const [snackErr, setSnackErr] = useState(false);
 
-  const handleSubmit = useCallback(async (projectId: number, quantity: number): Promise<boolean> => { if (!userName.trim()) { setSnackbar({ open: true, message: '请先输入用户名', severity: 'error' }); return false; } try { const isoDate = dayjs(recordedAt).format('YYYY-MM-DDTHH:mm:ss'); const res = await createRecord({ project_id: projectId, user_name: userName.trim(), quantity, recorded_at: isoDate }); if (res.code === 0) { setSnackbar({ open: true, message: '录入成功', severity: 'success' }); return true; } else { setSnackbar({ open: true, message: res.message, severity: 'error' }); return false; } } catch { setSnackbar({ open: true, message: '提交失败', severity: 'error' }); return false; } }, [userName, recordedAt]);
+  const [mts, setMts] = useState<MethodType[]>([]);
+  const [typeFilter, setTypeFilter] = useState('全部');
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}><CircularProgress /></Box>;
-  if (error) return <Box sx={{ p: 2 }}><Alert severity="error">{error}</Alert></Box>;
+  const loadProjects = useCallback(async () => {
+    if (!gid) return;
+    try {
+      const r = await getProjects({ group_id: gid, active_only: true });
+      if (r.code === 0 && r.data) setProjects(r.data);
+    } catch {} finally { setLoading(false); }
+  }, [gid]);
 
-  return (<Box sx={{ maxWidth: 640, mx: 'auto' }}><Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1.5 }}><IconButton onClick={() => navigate('/')} sx={{ bgcolor: 'rgba(30,136,229,0.08)', '&:hover': { bgcolor: 'rgba(30,136,229,0.15)' } }}><ArrowBackIcon sx={{ color: '#1e88e5' }} /></IconButton><Box><Typography variant="h5" fontWeight={700}>录入工作量</Typography><Typography variant="body2" color="text.secondary">{groupName || `分组 ${groupId}`} · {dayjs(recordedAt).format('YYYY-MM-DD HH:mm')}</Typography></Box></Box>
-    <Paper elevation={0} sx={{ mb: 3, borderRadius: R, background: 'linear-gradient(145deg,#ffffff,#f5f5f5)', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', overflow: 'hidden' }}><Box sx={{ p: 2, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 2, alignItems: isMobile ? 'stretch' : 'center' }}><TextField size="small" label="用户名" value={userName} onChange={e => setUserName(e.target.value)} placeholder="请输入您的姓名" sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }} required /><TextField size="small" label="日期时间" type="datetime-local" value={recordedAt} onChange={e => setRecordedAt(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ width: isMobile ? '100%' : 220, '& .MuiOutlinedInput-root': { borderRadius: R } }} /></Box></Paper>
-    {projects.length === 0 ? <Box sx={{ textAlign: 'center', py: 6 }}><Typography color="text.secondary">该分组下暂无项目</Typography></Box> : <Box sx={{ display: 'flex', flexDirection: 'column' }}>{projects.map(project => <ProjectRow key={project.id} project={project} onSubmit={handleSubmit} />)}</Box>}
-    <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })} variant="filled" sx={{ borderRadius: R }}>{snackbar.message}</Alert></Snackbar>
+  const loadMethodTypes = useCallback(async () => {
+    try { const r = await getMethodTypes(); if (r.code === 0 && r.data) setMts(r.data); } catch {}
+  }, []);
+
+  useEffect(() => { loadProjects(); loadMethodTypes(); }, [loadProjects, loadMethodTypes]);
+
+  // 仅显示方法(非研发项目)
+  const methods = projects.filter(p => p.method_type !== '研发项目');
+  const filtered = typeFilter === '全部'
+    ? methods
+    : methods.filter(p => p.method_type === typeFilter);
+
+  const handleSubmit = async (projectId: number, quantity: number) => {
+    if (!userName.trim()) { setSnackMsg('请输入用户名'); setSnackErr(true); return false; }
+    try {
+      const r = await createRecord({ project_id: projectId, user_name: userName, quantity, recorded_at: dateTime });
+      if (r.code === 0) { setSnackMsg(`录入成功: ${userName} ×${quantity}`); setSnackErr(false); return true; }
+      setSnackMsg(r.message); setSnackErr(true); return false;
+    } catch { setSnackMsg('录入失败'); setSnackErr(true); return false; }
+  };
+
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
+
+  return (<Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+      <IconButton onClick={() => navigate('/workload')} sx={{ bgcolor: 'rgba(30,136,229,0.08)', '&:hover': { bgcolor: 'rgba(30,136,229,0.15)' } }}>
+        <ArrowBackIcon />
+      </IconButton>
+      <Box><Typography variant="h5" fontWeight={700}>工作量录入</Typography><Typography variant="caption" color="text.secondary">选择检测方法并录入数量</Typography></Box>
+    </Box>
+
+    {/* 用户 & 时间 */}
+    <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+      <TextField label="用户名" size="small" value={userName} onChange={e => setUserName(e.target.value)} sx={{ width: 140, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+      <TextField label="日期时间" type="datetime-local" size="small" value={dateTime} onChange={e => setDateTime(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+    </Box>
+
+    {/* 类型筛选按钮栏 — 始终可见，随时切换 */}
+    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+      <Chip
+        label={`全部 (${methods.length})`} size="medium"
+        color={typeFilter === '全部' ? 'primary' : 'default'}
+        variant={typeFilter === '全部' ? 'filled' : 'outlined'}
+        onClick={() => setTypeFilter('全部')}
+        sx={{ borderRadius: R, cursor: 'pointer', fontWeight: typeFilter === '全部' ? 700 : 400 }}
+      />
+      {mts.filter(t => t.name !== '检测类型').map(t => {
+        const cnt = methods.filter(p => p.method_type === t.name).length;
+        return (
+          <Chip key={t.id}
+            label={`${t.name} (${cnt})`} size="medium"
+            color={typeFilter === t.name ? (typeColorMap[t.name] || 'primary') : 'default'}
+            variant={typeFilter === t.name ? 'filled' : 'outlined'}
+            onClick={() => setTypeFilter(t.name)}
+            sx={{ borderRadius: R, cursor: 'pointer', fontWeight: typeFilter === t.name ? 700 : 400 }}
+          />
+        );
+      })}
+    </Box>
+
+    {/* 项目列表 */}
+    {filtered.length === 0
+      ? <Typography color="text.secondary" textAlign="center" sx={{ py: 6 }}>{typeFilter !== '全部' ? `无 "${typeFilter}" 类型的检测方法` : '该实验室暂无方法'}</Typography>
+      : filtered.map(p => <ProjectRow key={p.id} project={p} onSubmit={handleSubmit} />)}
+
+    <Snackbar open={!!snackMsg} autoHideDuration={3000} onClose={() => setSnackMsg('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Alert severity={snackErr ? 'error' : 'success'} sx={{ borderRadius: R }} onClose={() => setSnackMsg('')}>{snackMsg}</Alert>
+    </Snackbar>
   </Box>);
 };
+
 export default EntryPage;

@@ -1,0 +1,99 @@
+classDiagram
+    direction TB
+
+    class ProjectResponse {
+        +i64 id
+        +i64 group_id
+        +String group_name
+        +String name
+        +String full_name
+        +String notes
+        +i64 sort_order
+        +bool is_active
+        +f64 coefficient
+        +String method_type
+        +i64 parent_id
+        +Vec~ProjectResponse~ methods
+        +String associated_lab_ids
+        +String associated_method_ids
+        +String created_at
+    }
+
+    class ProjectCreate {
+        +i64 group_id
+        +String name
+        +Option~i64~ sort_order
+        +Option~f64~ coefficient
+        +Option~String~ method_type
+        +Option~String~ associated_lab_ids
+        +Option~String~ associated_method_ids
+    }
+
+    class ProjectUpdate {
+        +Option~String~ name
+        +Option~String~ full_name
+        +Option~String~ notes
+        +Option~i64~ sort_order
+        +Option~bool~ is_active
+        +Option~f64~ coefficient
+        +Option~String~ method_type
+        +Option~String~ associated_lab_ids
+        +Option~String~ associated_method_ids
+    }
+
+    class ProjectGroup {
+        +i64 id
+        +String name
+        +i64 sort_order
+        +String created_at
+    }
+
+    class MethodType {
+        +i64 id
+        +String name
+        +i64 sort_order
+    }
+
+    class Project {
+        +number id
+        +number group_id
+        +string group_name
+        +string name
+        +string? full_name
+        +string? notes
+        +number sort_order
+        +number is_active
+        +number coefficient
+        +string method_type
+        +number parent_id
+        +Project[]? methods
+        +string associated_lab_ids
+        +string associated_method_ids
+        +string created_at
+    }
+
+    class ProjectCard {
+        +TV key
+        +string label
+        +ReactNode icon
+        +string desc
+    }
+
+    class ManagePageState {
+        +Project[] ps
+        +ProjectGroup[] gs
+        +MethodType[] mts
+        +TV tb
+        +ProjectForm pf
+        +Set~number~ selectedLabIds
+        +Project[] filteredMethods
+    }
+
+    ProjectResponse --> ProjectResponse : methods
+    ProjectResponse --> ProjectGroup : group_id
+    ProjectCreate ..> ProjectResponse : creates
+    ProjectUpdate ..> ProjectResponse : updates
+    Project ..> ProjectResponse : mirrors
+    ManagePageState --> Project : ps[]
+    ManagePageState --> ProjectGroup : gs[]
+    ManagePageState --> ProjectCard : TC[]

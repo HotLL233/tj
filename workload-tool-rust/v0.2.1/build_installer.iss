@@ -32,6 +32,7 @@ Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: 
 Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.2.1\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.2.1\static\*"; DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.2.1\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\excel-parser\target\release\excel-parser.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -42,6 +43,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 Filename: "{app}\{#MyAppExeName}"; Description: "启动 {#MyAppName}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
+Type: files; Name: "{app}\excel-parser.exe"
 Type: filesandordirs; Name: "{app}\data"
 Type: filesandordirs; Name: "{app}\static"
 Type: dirifempty; Name: "{app}"
