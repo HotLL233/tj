@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor User
+    participant StatsPage as StatsPage.tsx
+    participant Client as client.ts
+    participant Router as Axum Router
+    participant Handler as export_preview_handler
+    participant Query as export_data
+    participant DB as SQLite
+
+    User->>StatsPage: 点击预览卡片 (Sheet 1~10)
+    StatsPage->>StatsPage: setAc('sheetN')
+    StatsPage->>Client: getPreviewSheetN({ start, end, group_id? })
+    Client->>Router: GET /api/export/preview/sheetN
+    Router->>Handler: preview_sheetN(State(pool), Query(q))
+    Handler->>Handler: 解析日期范围 (默认当月)
+    Handler->>Query: query_sheetN_data(&conn, start, end, ...)
+    Query->>DB: SELECT ... GROUP BY ...
+    DB-->>Query: Vec<Row>
+    Query-->>Handler: Result<Vec<Row>>
+    Handler-->>Router: Json(ApiResponse::ok(data))
+    Router-->>Client: { code:0, data:[...] }
+    Client-->>StatsPage: ApiResponse<T[]>
+    StatsPage->>StatsPage: setData(data)
+    StatsPage->>User: 渲染 PreviewTable / MUI Table
+
+    Note over StatsPage,User: 10 个 Sheet 的预览<br/>全部复用 export_data 查询<br/>与导出 Excel 数据一致

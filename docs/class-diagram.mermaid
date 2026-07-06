@@ -1,40 +1,118 @@
 classDiagram
-    class ProjectGroup {
-        +int id
-        +string name
-        +int sort_order
-        +string created_at
+    class WorkRecord {
+        +i64 id
+        +i64 project_id
+        +String user_name
+        +i32 quantity
+        +String recorded_at
+        +String created_at
+        +Option~String~ deleted_at
     }
 
     class Project {
-        +int id
-        +int group_id
-        +string name
-        +int sort_order
-        +int is_active
-        +string created_at
+        +i64 id
+        +i64 group_id
+        +String name
+        +String full_name
+        +String notes
+        +i64 sort_order
+        +bool is_active
+        +String created_at
     }
 
-    class WorkRecord {
-        +int id
-        +int project_id
-        +string user_name
-        +int quantity
-        +string recorded_at
-        +string created_at
-        +string deleted_at
+    class ProjectGroup {
+        +i64 id
+        +String name
+        +i64 sort_order
+        +String created_at
     }
 
-    class AuditLog {
-        +int id
-        +string action
-        +string table_name
-        +int record_id
-        +string user_name
-        +string detail
-        +string created_at
+    class Method {
+        +i64 id
+        +String name
+        +String full_name
+        +f64 coefficient
+        +f64 amount
+        +String notes
+        +bool is_active
+        +String created_at
     }
 
-    ProjectGroup "1" --> "*" Project : 包含
-    Project "1" --> "*" WorkRecord : 关联
-    WorkRecord ..> AuditLog : 触发记录
+    class MethodType {
+        +i64 id
+        +String name
+        +i64 sort_order
+    }
+
+    class ProjectMethodLink {
+        +i64 project_id
+        +i64 method_id
+    }
+
+    class MethodTypeLink {
+        +i64 method_id
+        +i64 method_type_id
+    }
+
+    class ProjectLabLink {
+        +i64 project_id
+        +i64 group_id
+    }
+
+    class FlatRecordResponse {
+        +i64 id
+        +i64 project_id
+        +String project_name
+        +String group_name
+        +String user_name
+        +i32 quantity
+        +String recorded_at
+        +String created_at
+        +Option~String~ deleted_at
+        +String method_name
+        +String method_type_name
+    }
+
+    class ImportMapping {
+        +i64 id
+        +String header_pattern
+        +String match_mode
+        +String target_table
+        +String default_type
+        +i64 priority
+        +bool is_active
+    }
+
+    class MethodImportItem {
+        +String group_name
+        +String project_name
+        +String method_name
+        +String method_type
+        +f64 coefficient
+    }
+
+    class ImportSummary {
+        +usize total_methods
+        +usize total_projects
+        +usize total_groups
+        +Vec~TypeCount~ by_type
+    }
+
+    class TypeCount {
+        +String method_type
+        +usize count
+    }
+
+    WorkRecord "N" --> "1" Project : project_id
+    Project "N" --> "1" ProjectGroup : group_id
+    Project "1" --> "N" ProjectMethodLink : project_id
+    ProjectMethodLink "N" --> "1" Method : method_id
+    Method "1" --> "N" MethodTypeLink : method_id
+    MethodTypeLink "N" --> "1" MethodType : method_type_id
+    Project "1" --> "N" ProjectLabLink : project_id
+    ProjectLabLink "N" --> "1" ProjectGroup : group_id
+    FlatRecordResponse ..> WorkRecord : extends
+    FlatRecordResponse ..> Method : via JOIN
+    FlatRecordResponse ..> MethodType : via JOIN
+    MethodImportItem ..> ImportMapping : routed by
+    ImportMapping --> MethodType : default_type

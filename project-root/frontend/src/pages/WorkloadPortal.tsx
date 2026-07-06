@@ -9,7 +9,11 @@ const WorkloadPortal: React.FC = () => {
   const n = useNavigate(); const [gs, setGs] = useState<ProjectGroup[]>([]); const [ld, setLd] = useState(true); const [er, setEr] = useState(''); const [sq, setSq] = useState('');
   const lg = async () => { setLd(true); setEr(''); try { const r = await getGroups(); if (r.code === 0) setGs(r.data as ProjectGroup[]); else setEr(r.message); } catch { setEr('加载失败'); } finally { setLd(false); } };
   useEffect(() => { lg(); }, []);
-  const fg = useMemo(() => { if (!sq.trim()) return gs; const q = sq.trim().toLowerCase(); return gs.filter(g => g.name.toLowerCase().includes(q)); }, [gs, sq]);
+  const fg = useMemo(() => {
+    let filtered = gs.filter(g => !g.name.includes('方法') && g.name !== '研发项目');
+    if (sq.trim()) { const q = sq.trim().toLowerCase(); filtered = filtered.filter(g => g.name.toLowerCase().includes(q)); }
+    return filtered;
+  }, [gs, sq]);
   if (ld) return <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}><CircularProgress /></Box>;
   if (er) return <Box sx={{ p: 2 }}><Alert severity="error" action={<Typography component="button" onClick={lg} sx={{ cursor: 'pointer', border: 'none', bgcolor: 'transparent', color: 'inherit', textDecoration: 'underline' }}>重试</Typography>}>{er}</Alert></Box>;
 
@@ -22,7 +26,7 @@ const WorkloadPortal: React.FC = () => {
     </Box>
     <TextField size="small" placeholder="搜索实验室..." value={sq} onChange={e => setSq(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }} sx={{ mb: 3, maxWidth: 400, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
     {fg.length === 0 ? <Box sx={{ textAlign: 'center', py: 6 }}><Typography color="text.secondary">{sq ? '未找到' : '暂无分组'}</Typography></Box> : (
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' }, gap: 2.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3,1fr)', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' }, gap: { xs: 1, sm: 2.5 } }}>
         {fg.map(g => <GroupCard key={g.id} group={g} onClick={() => n(`/entry/${g.id}`)} />)}
       </Box>
     )}

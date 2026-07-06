@@ -1,0 +1,132 @@
+sequenceDiagram
+    actor User
+    participant Dlg as ProjectDialog
+    participant MP as ManagePage
+    participant API as client.ts
+    participant H as project_handler
+    participant R as project_repo
+    participant DB as SQLite
+
+    User->>Dlg: 填写项目名称 + 多选实验室 + 多选方法
+    Dlg->>MP: handleSave({name, notes, associated_lab_ids, associated_method_ids})
+    MP->>API: createProject(body)
+    API->>H: POST /api/projects {group_id, name, associated_lab_ids:[1,3], associated_method_ids:[5,7]}
+    H->>R: create(pool, body)
+    R->>DB: BEGIN TRANSACTION
+    R->>DB: INSERT INTO projects (group_id, name) VALUES (?, ?)
+    R->>DB: INSERT INTO project_lab_links (project_id, group_id) VALUES (?, ?) × N
+    R->>DB: INSERT INTO project_method_links (project_id, method_id) VALUES (?, ?) × N
+    R->>DB: COMMIT
+    R->>DB: SELECT p.*, pg.name, GROUP_CONCAT(DISTINCT pll.group_id), GROUP_CONCAT(DISTINCT pml.method_id) ...
+    DB-->>R: ProjectResponse (含 associated_lab_ids, associated_method_ids)
+    R-->>H: ProjectResponse
+    H-->>API: ApiResponse~ProjectResponse~
+    API-->>MP: data
+    MP->>MP: loadProjects() 刷新, setDialogOpen(false)
+
+---
+
+sequenceDiagram
+    actor User
+    participant Dlg as MethodDialog
+    participant MP as ManagePage
+    participant API as client.ts
+    participant H as methods_handler
+    participant R as methods_repo
+    participant DB as SQLite
+
+    User->>Dlg: 填写方法名称 + 勾选检测类型 + 备注
+    Dlg->>MP: handleSave({name, full_name, coefficient, notes, method_type_ids:[1,2]})
+    MP->>API: createMethod(body)
+    API->>H: POST /api/methods {name, coefficient:1.0, method_type_ids:[1,2]}
+    H->>R: create(pool, body)
+    R->>DB: BEGIN TRANSACTION
+    R->>DB: INSERT INTO methods (name, full_name, coefficient, notes) VALUES (?,?,?,?)
+    R->>DB: INSERT INTO method_type_links (method_id, method_type_id) VALUES (?, ?) × N
+    R->>DB: COMMIT
+    R->>DB: SELECT m.*, GROUP_CONCAT(mtl.method_type_id) ...
+    DB-->>R: MethodResponse (含 method_types)
+    R-->>H: MethodResponse
+    H-->>API: ApiResponse~MethodResponse~
+    API-->>MP: data
+    MP->>MP: loadMethods() 刷新, setDialogOpen(false)
+
+---
+
+sequenceDiagram
+    actor User
+    participant Stats as StatsPage
+    participant API as client.ts
+    participant H as stats_handler
+    participant DB as SQLite
+
+    User->>Stats: 打开统计页面（选择日期范围）
+    Stats->>API: getStatsSummary({start, end})
+    API->>H: GET /api/stats/summary?start=...&end=...
+    H->>DB: SELECT COALESCE(SUM(wr.quantity * COALESCE(subq.avg_coeff, 1.0)), 0) FROM work_records wr JOIN projects p ON wr.project_id=p.id LEFT JOIN (SELECT pml.project_id, AVG(m.coefficient) AS avg_coeff FROM project_method_links pml JOIN methods m ON pml.method_id=m.id GROUP BY pml.project_id) subq ON p.id=subq.project_id WHERE wr.deleted_at IS NULL ...
+    Note over DB: coefficient 从 methods 表来，通过 project_method_links 中转
+    DB-->>H: coefficient_score
+    H-->>API: StatsSummary
+    API-->>Stats: 统计数据
+    Stats->>Stats: 渲染图表
+
+---
+
+sequenceDiagram
+    actor User
+    participant MP as ManagePage
+    participant API as client.ts
+    participant H as project_handler
+    participant R as project_repo
+    participant DB as SQLite
+
+    User->>MP: 上传 Excel 文件
+    MP->>API: POST /api/projects/method-import (multipart)
+    API->>H: method_import(multipart)
+    H->>H: 解析 Excel → 列头分类
+    Note over H: classify_method_type(): 含"研发"→研发项目；含"方法"→检测方法
+    H->>R: batch_import_by_column(conn, items)
+    R->>DB: BEGIN
+    loop 每列
+        alt header == "实验室管理"
+            R->>DB: INSERT OR IGNORE INTO project_groups
+        else 含"研发"
+            R->>DB: INSERT INTO projects (group_id, name)
+        else 含"方法"
+            R->>DB: INSERT OR IGNORE INTO methods (name, full_name, coefficient)
+            R->>DB: INSERT OR IGNORE INTO method_type_links
+        end
+    end
+    R->>DB: COMMIT
+    R-->>H: ImportSummary
+    H-->>API: ApiResponse~ImportSummary~
+    API-->>MP: 导入结果展示
+
+---
+
+sequenceDiagram
+    participant Main as main.rs
+    participant Mig as migrations.rs
+    participant DB as SQLite
+
+    Main->>Mig: run(conn) - 迁移 v0.2.17
+    Mig->>DB: SELECT name FROM sqlite_master WHERE type='table' AND name='methods'
+    alt methods 表已存在
+        DB-->>Mig: "methods" (跳过迁移)
+    else methods 不存在（新环境或旧版本升级）
+        Mig->>DB: CREATE TABLE methods (...)
+        Mig->>DB: CREATE TABLE project_lab_links (...)
+        Mig->>DB: CREATE TABLE project_method_links (...)
+        Mig->>DB: CREATE TABLE method_type_links (...)
+        Mig->>DB: INSERT INTO methods (name, full_name, coefficient, notes, is_active, created_at) SELECT name, full_name, coefficient, notes, is_active, created_at FROM projects WHERE method_type != '研发项目'
+        Mig->>DB: INSERT INTO project_lab_links (project_id, group_id) SELECT p.id, CAST(json_each.value AS INTEGER) FROM projects p, json_each(p.associated_lab_ids) WHERE p.associated_lab_ids != '[]' AND p.associated_lab_ids != ''
+        Mig->>DB: INSERT INTO project_method_links (project_id, method_id) SELECT p.id, m.id FROM projects p JOIN methods m ON p.associated_method_ids LIKE '%' || m.id || '%' WHERE p.associated_method_ids != '[]' AND p.associated_method_ids != ''
+        Mig->>DB: INSERT INTO method_type_links (method_id, method_type_id) SELECT m.id, mt.id FROM methods m JOIN projects p_old ON m.name = p_old.name AND m.full_name = p_old.full_name JOIN method_types mt ON p_old.method_type = mt.name WHERE p_old.method_type IS NOT NULL AND p_old.method_type != '研发项目'
+        Mig->>DB: ALTER TABLE projects DROP COLUMN full_name
+        Mig->>DB: ALTER TABLE projects DROP COLUMN sort_order
+        Mig->>DB: ALTER TABLE projects DROP COLUMN is_active
+        Mig->>DB: ALTER TABLE projects DROP COLUMN coefficient
+        Mig->>DB: ALTER TABLE projects DROP COLUMN method_type
+        Mig->>DB: ALTER TABLE projects DROP COLUMN associated_lab_ids
+        Mig->>DB: ALTER TABLE projects DROP COLUMN associated_method_ids
+    end

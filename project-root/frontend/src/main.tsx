@@ -5,6 +5,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
 import './styles/index.css';
+import './styles/global-fix.css';  // v0.3.21 隐藏number input spinner
 
 const theme = createTheme({
   palette: {

@@ -1,125 +1,66 @@
----
-title: 录入流程
----
 sequenceDiagram
-    actor U as 用户
-    participant HP as HomePage
-    participant EP as EntryPage
-    participant API as api/client.ts
-    participant BE as FastAPI
+    participant User as 用户
+    participant F as Frontend (React)
+    participant API as Backend (Axum)
     participant DB as SQLite
 
-    U->>HP: 点击分组卡片
-    HP->>EP: 路由跳转 /entry/:groupId
-    EP->>API: GET /api/projects?group_id=X
-    API->>BE: HTTP GET
-    BE->>DB: SELECT * FROM projects WHERE group_id=X AND is_active=1
-    DB-->>BE: 项目列表
-    BE-->>API: {code:0, data:[...]}
-    API-->>EP: 渲染项目列表
+    %% ── 方法导入流程 ──
+    rect rgb(232, 245, 233)
+        Note over User,DB: P0-2/P0-3: 方法导入智能识别
 
-    U->>EP: 选择日期(可选)
-    U->>EP: 在项目行输入数量, 点击提交
-    EP->>API: POST /api/records {project_id, user_name, quantity, recorded_at}
-    API->>BE: HTTP POST
-    BE->>DB: INSERT INTO work_records (...)
-    BE->>DB: INSERT INTO audit_log ('create', 'work_records', id, ...)
-    DB-->>BE: OK
-    BE-->>API: {code:0, data:{id:...}}
-    API-->>EP: 提交成功提示
-    EP->>EP: 清空该行输入框, 显示绿色对勾 2s
+        User->>F: 选择 Excel 文件上传
+        F->>API: POST /api/methods/import (multipart)
+        API->>API: calamine 读取 Excel
+        API->>API: 扫描所有列头 (headers)
 
----
-title: 统计查询流程
----
-sequenceDiagram
-    actor U as 用户
-    participant SP as StatsPage
-    participant API as api/client.ts
-    participant BE as FastAPI
-    participant DB as SQLite
+        loop 遍历每个列头
+            alt 列头包含中文"方法"
+                API->>API: 提取类型名 = header.replace("方法","")
+                Note over API: e.g. "液相方法" → "液相"
+                API->>DB: SELECT id FROM method_types WHERE name=?
+                alt 类型不存在
+                    API->>DB: INSERT INTO method_types (name)
+                end
+                API->>API: 将该列标记为 method 列
+            else 列头不包含"方法"
+                API->>DB: 查询 import_mappings 匹配
+                API->>API: 按映射规则路由到 project_groups / projects
+            end
+        end
 
-    U->>SP: 进入统计页
-    SP->>API: GET /api/stats/summary?group_by=week
-    API->>BE: HTTP GET
-    BE->>DB: SELECT strftime('%Y-%W', recorded_at) as week, SUM(quantity), COUNT(*)
-    BE->>DB: FROM work_records WHERE deleted_at IS NULL GROUP BY week
-    DB-->>BE: 汇总数据
-    BE-->>API: {code:0, data:{total_quantity, details:[...]}}
-    API-->>SP: 渲染统计卡片 + 表格
+        loop 遍历 method 列的每行
+            API->>DB: SELECT id FROM methods WHERE name=?
+            alt 方法已存在 (去重 P0-5)
+                API->>API: 跳过该行
+            else 方法不存在
+                API->>DB: INSERT INTO methods (name)
+                API->>DB: INSERT INTO method_type_links
+            end
+        end
 
-    U->>SP: 切换"按月" Tab
-    SP->>API: GET /api/stats/summary?group_by=month
-    API->>BE: HTTP GET
-    BE->>DB: SELECT strftime('%Y-%m', recorded_at) as month, SUM(quantity), COUNT(*)
-    DB-->>BE: 按月汇总
-    BE-->>SP: 更新表格
+        API-->>F: ImportSummary (total_methods, by_type)
+        F-->>User: 显示导入结果
+    end
 
-    U->>SP: 切换"按用户" Tab
-    SP->>API: GET /api/stats/by-user?start=&end=
-    API->>BE: HTTP GET
-    BE->>DB: SELECT user_name, SUM(quantity), COUNT(*) FROM work_records
-    BE->>DB: WHERE deleted_at IS NULL GROUP BY user_name ORDER BY SUM(quantity) DESC
-    DB-->>BE: 按用户汇总
-    BE-->>SP: 渲染用户统计表
+    %% ── 扁平化记录查询 ──
+    rect rgb(227, 242, 253)
+        Note over User,DB: P0-4: SampleListPage 7字段展示
 
----
-title: Excel导出流程
----
-sequenceDiagram
-    actor U as 用户
-    participant SP as StatsPage
-    participant API as api/client.ts
-    participant BE as FastAPI
-    participant DB as SQLite
-    participant OX as openpyxl
+        User->>F: 打开 SampleListPage
+        F->>API: GET /api/records/flat?page=1&page_size=20
+        API->>DB: SELECT wr.*, p.name, pg.name, m.name, mt.name<br/>FROM work_records wr<br/>JOIN projects p ON wr.project_id=p.id<br/>JOIN project_groups pg ON p.group_id=pg.id<br/>LEFT JOIN project_method_links pml ON p.id=pml.project_id<br/>LEFT JOIN methods m ON pml.method_id=m.id<br/>LEFT JOIN method_type_links mtl ON m.id=mtl.method_id<br/>LEFT JOIN method_types mt ON mtl.method_type_id=mt.id<br/>ORDER BY wr.recorded_at DESC
+        DB-->>API: 扁平化记录列表
+        API-->>F: PaginatedResponse~FlatRecordResponse~
+        F-->>User: 7列表格展示<br/>(时间|实验室|项目|录入人|方法|类型|数量)
+    end
 
-    U->>SP: 点击「导出 Excel」
-    SP->>U: 弹出确认（含时间范围提示）
-    U->>SP: 确认导出
-    SP->>API: GET /api/export/excel?start=&end=&group_id=
-    API->>BE: HTTP GET (responseType: blob)
-    BE->>DB: SELECT wr.*, p.name, pg.name FROM work_records wr
-    BE->>DB: JOIN projects p ON wr.project_id=p.id
-    BE->>DB: JOIN project_groups pg ON p.group_id=pg.id
-    BE->>DB: WHERE wr.deleted_at IS NULL ORDER BY wr.recorded_at DESC
-    DB-->>BE: 全量记录数据
-    BE->>OX: 创建工作簿, 写入数据, 设置列宽
-    OX-->>BE: xlsx 二进制
-    BE-->>API: Content-Type: application/vnd.openxmlformats...
-    API-->>SP: Blob 下载
-    SP->>U: 浏览器触发下载
+    %% ── 移动端响应式 ──
+    rect rgb(255, 243, 224)
+        Note over User,F: P0-1: 移动端全局适配
 
----
-title: 项目分组管理流程
----
-sequenceDiagram
-    actor U as 用户
-    participant MP as ManagePage
-    participant API as api/client.ts
-    participant BE as FastAPI
-    participant DB as SQLite
-
-    U->>MP: 进入管理页
-    MP->>API: GET /api/groups
-    API->>BE: HTTP GET
-    BE->>DB: SELECT g.*, COUNT(p.id) as project_count
-    BE->>DB: FROM project_groups g LEFT JOIN projects p ON g.id=p.group_id GROUP BY g.id
-    DB-->>BE: 分组列表含项目数
-    BE-->>MP: 渲染分组管理面板
-
-    U->>MP: 创建新分组
-    MP->>API: POST /api/groups {name:"新分组"}
-    API->>BE: HTTP POST
-    BE->>DB: INSERT INTO project_groups (name)
-    DB-->>BE: OK
-    BE-->>MP: 刷新列表
-
-    U->>MP: 删除空分组
-    MP->>API: DELETE /api/groups/{id}
-    API->>BE: HTTP DELETE
-    BE->>DB: SELECT COUNT(*) FROM projects WHERE group_id=?
-    DB-->>BE: count=0 → 允许删除
-    BE->>DB: DELETE FROM project_groups WHERE id=?
-    DB-->>BE: OK
-    BE-->>MP: 删除成功
+        User->>F: 手机浏览器访问 (< 768px)
+        F->>F: 检测 viewport 宽度
+        F->>F: 应用响应式 CSS 规则<br/>body: overflow-x:hidden<br/>table: overflow-x:auto<br/>文字: word-wrap:break-word
+        F->>F: 组件布局切换<br/>EntryPage: 多列→单列<br/>ManagePage: 3列网格→单列堆叠<br/>StatsPage: 卡片→全宽+Accordion筛选区<br/>SampleListPage: 前3列固定+后4列横向滚动
+        F-->>User: 无横向滚动条的移动端界面
+    end

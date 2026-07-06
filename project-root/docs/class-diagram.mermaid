@@ -1,0 +1,132 @@
+classDiagram
+    direction TB
+
+    %% ── 后端模型 ──
+    class ImportMapping {
+        +i64 id
+        +String header_pattern
+        +String match_mode
+        +String target_table
+        +String default_type
+        +i64 priority
+        +bool is_active
+    }
+
+    class ImportSummary {
+        +usize total_methods
+        +usize total_projects
+        +usize total_groups
+        +Vec~TypeCount~ by_type
+        +usize types_created
+    }
+
+    class TypeCount {
+        +String method_type
+        +usize count
+    }
+
+    class MethodResponse {
+        +i64 id
+        +String name
+        +String full_name
+        +f64 coefficient
+        +f64 amount
+        +String notes
+        +bool is_active
+        +Vec~i64~ type_ids
+        +Vec~String~ type_names
+        +String created_at
+    }
+
+    class MethodType {
+        +i64 id
+        +String name
+        +i32 sort_order
+    }
+
+    class RecordResponse {
+        +i64 id
+        +i64 project_id
+        +String project_name
+        +String group_name
+        +String user_name
+        +i32 quantity
+        +String recorded_at
+        +String created_at
+        +Option~String~ deleted_at
+    }
+
+    class Project {
+        +i64 id
+        +String name
+        +String full_name
+        +String notes
+        +i32 sort_order
+        +bool is_active
+        +Vec~i64~ lab_ids
+        +Vec~String~ lab_names
+        +Vec~i64~ method_ids
+        +Vec~String~ method_names
+        +String created_at
+    }
+
+    class ProjectGroup {
+        +i64 id
+        +String name
+        +i32 sort_order
+        +String created_at
+    }
+
+    %% ── 关系 ──
+    ImportSummary "1" --> "*" TypeCount : contains
+    MethodResponse "1" --> "*" MethodType : type_names/type_ids
+    MethodResponse "1" --> "*" MethodType : via method_type_links
+    Project "1" --> "*" MethodResponse : method_ids
+    Project "1" --> "*" ProjectGroup : lab_ids
+    RecordResponse "1" --> "1" Project : project_id
+    Project "1" --> "1" ProjectGroup : group_id
+
+    %% ── 前端 TypeScript 类型 (对应后端模型) ──
+    class TSMethod {
+        +number id
+        +string name
+        +string full_name
+        +number coefficient
+        +number amount?
+        +string notes
+        +boolean is_active
+        +number[] type_ids
+        +string[] type_names
+        +string created_at
+    }
+
+    class TSProject {
+        +number id
+        +string name
+        +string full_name?
+        +string notes
+        +number sort_order?
+        +boolean is_active?
+        +number[] lab_ids
+        +string[] lab_names
+        +number[] method_ids
+        +string[] method_names
+        +string created_at
+    }
+
+    class TSWorkRecord {
+        +number id
+        +number project_id
+        +string project_name?
+        +string group_name?
+        +string user_name
+        +number quantity
+        +string recorded_at
+        +string created_at
+    }
+
+    class ApiResponse~T~ {
+        +number code
+        +string message
+        +T data
+    }

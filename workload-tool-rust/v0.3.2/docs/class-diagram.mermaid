@@ -1,0 +1,119 @@
+classDiagram
+    direction TB
+
+    class ProjectResponse {
+        +i64 id
+        +i64 group_id
+        +String group_name
+        +String name
+        +String notes
+        +Vec~i64~ associated_lab_ids
+        +Vec~i64~ associated_method_ids
+        +String created_at
+    }
+
+    class ProjectCreate {
+        +i64 group_id
+        +String name
+        +Option~Vec<i64>~ associated_lab_ids
+        +Option~Vec<i64>~ associated_method_ids
+    }
+
+    class ProjectUpdate {
+        +Option~String~ name
+        +Option~String~ notes
+        +Option~Vec<i64>~ associated_lab_ids
+        +Option~Vec<i64>~ associated_method_ids
+    }
+
+    class MethodResponse {
+        +i64 id
+        +String name
+        +String full_name
+        +f64 coefficient
+        +String notes
+        +bool is_active
+        +Vec~MethodType~ method_types
+        +String created_at
+    }
+
+    class MethodCreate {
+        +String name
+        +Option~String~ full_name
+        +Option~f64~ coefficient
+        +Option~String~ notes
+        +Option~Vec<i64>~ method_type_ids
+    }
+
+    class MethodUpdate {
+        +Option~String~ name
+        +Option~String~ full_name
+        +Option~f64~ coefficient
+        +Option~String~ notes
+        +Option~bool~ is_active
+        +Option~Vec<i64>~ method_type_ids
+    }
+
+    class MethodType {
+        +i64 id
+        +String name
+        +i64 sort_order
+    }
+
+    class MethodTypeCreate {
+        +String name
+        +Option~i64~ sort_order
+    }
+
+    class MethodTypeUpdate {
+        +Option~String~ name
+        +Option~i64~ sort_order
+    }
+
+    class GroupResponse {
+        +i64 id
+        +String name
+        +i64 sort_order
+        +String created_at
+        +i64 project_count
+    }
+
+    class MethodImportItem {
+        +String group_name
+        +String project_name
+        +String method_name
+        +String method_type
+        +f64 coefficient
+    }
+
+    class ImportSummary {
+        +usize total_methods
+        +usize total_projects
+        +usize total_groups
+        +Vec~TypeCount~ by_type
+    }
+
+    class project_lab_links {
+        +i64 project_id
+        +i64 group_id
+    }
+
+    class project_method_links {
+        +i64 project_id
+        +i64 method_id
+    }
+
+    class method_type_links {
+        +i64 method_id
+        +i64 method_type_id
+    }
+
+    ProjectResponse --> GroupResponse : group_id
+    ProjectResponse ..> project_lab_links : associated_lab_ids
+    ProjectResponse ..> project_method_links : associated_method_ids
+    MethodResponse --> MethodType : method_types[]
+    MethodResponse ..> method_type_links : method_type_ids
+    MethodImportItem ..> MethodResponse : creates
+    MethodImportItem ..> ProjectResponse : creates
+    ProjectCreate ..> ProjectResponse : creates
+    MethodCreate ..> MethodResponse : creates

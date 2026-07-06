@@ -2,6 +2,7 @@ use rusqlite::Connection;
 use std::collections::BTreeMap;
 use crate::db::DbPool;
 use crate::error::{Result, AppError};
+use crate::repo::audit_repo;
 use crate::models::project::{ImportSummary, TypeCount, MethodImportItem};
 use crate::models::method::{MethodResponse, MethodCreate, MethodUpdate};
 
@@ -93,6 +94,8 @@ pub fn create(pool: &DbPool, body: &MethodCreate) -> Result<MethodResponse> {
         }
     }
 
+    audit_repo::log(pool, "create", "methods", Some(mid), "system", &format!("创建方法: {}", body.name))?;
+
     get_by_id(pool, mid)
 }
 
@@ -123,6 +126,7 @@ pub fn update(pool: &DbPool, id: i64, body: &MethodUpdate) -> Result<MethodRespo
             )?;
         }
     }
+    audit_repo::log(pool, "update", "methods", Some(id), "system", &format!("更新方法: {}", body.name.as_deref().unwrap_or("")))?;
     get_by_id(pool, id)
 }
 
@@ -135,6 +139,7 @@ pub fn delete(pool: &DbPool, id: i64) -> Result<()> {
     if used > 0 {
         return Err(AppError::Validation(format!("该方法被{}个项目关联，无法删除", used)));
     }
+    audit_repo::log(pool, "delete", "methods", Some(id), "system", "删除方法")?;
     conn.execute("DELETE FROM method_type_links WHERE method_id=?1", [id])?;
     conn.execute("DELETE FROM methods WHERE id=?1", [id])?;
     Ok(())
@@ -184,18 +189,60 @@ pub fn delete_method_type(pool: &DbPool, id: i64) -> Result<()> {
 
 // ── 导入 ──
 
-/// v0.2.17: 按列导入 — 列头=分组名，数据行=方法名
-/// items: Vec<(group_name/lab_name, method_name, method_type)>
-pub fn batch_import_by_column(
+/// v0.2.17: 按列导入 — 分三路：实验室→project_groups, 研发项目→projects, 方法→methods
+pub fn batch_import_column_split(
     conn: &Connection,
-    items: &[(String, String, String)],
+    group_names: &[String],
+    project_names: &[String],
+    method_items: &[(String, String, String)],
 ) -> Result<ImportSummary> {
     let mut group_count = 0usize;
+    let mut project_count = 0usize;
     let mut method_count = 0usize;
     let mut type_counter: BTreeMap<String, usize> = BTreeMap::new();
 
-    for (group_name, item_name, method_type) in items {
-        // 创建/查找分组
+    // 1. 实验室分组
+    for gname in group_names {
+        let existed: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM project_groups WHERE name=?1",
+            rusqlite::params![gname], |r| r.get(0),
+        ).unwrap_or(0);
+        conn.execute("INSERT OR IGNORE INTO project_groups (name) VALUES (?1)",
+            rusqlite::params![gname])?;
+        if existed == 0 { group_count += 1; }
+    }
+
+    // 2. 研发项目 → projects 表
+    // 确保"研发项目"分组存在
+    conn.execute("INSERT OR IGNORE INTO project_groups (name) VALUES ('研发项目')", [])?;
+    let proj_gid: i64 = conn.query_row(
+        "SELECT id FROM project_groups WHERE name='研发项目'",
+        [], |r| r.get(0),
+    )?;
+
+    for pname in project_names {
+        let existing: Option<i64> = conn.query_row(
+            "SELECT id FROM projects WHERE name=?1 AND group_id=?2",
+            rusqlite::params![pname, proj_gid], |r| r.get(0),
+        ).ok();
+        if existing.is_none() {
+            conn.execute(
+                "INSERT INTO projects (group_id, name, method_type) VALUES (?1,?2,'研发项目')",
+                rusqlite::params![proj_gid, pname],
+            )?;
+            let pid = conn.last_insert_rowid();
+            // Link project → lab (研发项目分组)
+            conn.execute(
+                "INSERT OR IGNORE INTO project_lab_links (project_id, group_id) VALUES (?1,?2)",
+                rusqlite::params![pid, proj_gid],
+            )?;
+            project_count += 1;
+        }
+    }
+
+    // 3. 方法 → methods 表
+    for (group_name, item_name, method_type) in method_items {
+        // 确保方法分组存在
         let existed: i64 = conn.query_row(
             "SELECT COUNT(*) FROM project_groups WHERE name=?1",
             rusqlite::params![group_name], |r| r.get(0),
@@ -204,9 +251,7 @@ pub fn batch_import_by_column(
             rusqlite::params![group_name])?;
         if existed == 0 { group_count += 1; }
 
-        if item_name.is_empty() { continue; }
-
-        // 创建方法 (如果不存在)
+        // Insert method
         let existing: Option<i64> = conn.query_row(
             "SELECT id FROM methods WHERE name=?1",
             rusqlite::params![item_name], |r| r.get(0),
@@ -215,10 +260,8 @@ pub fn batch_import_by_column(
         let mid = if let Some(pid) = existing {
             pid
         } else {
-            conn.execute(
-                "INSERT INTO methods (name) VALUES (?1)",
-                rusqlite::params![item_name],
-            )?;
+            conn.execute("INSERT INTO methods (name) VALUES (?1)",
+                rusqlite::params![item_name])?;
             method_count += 1;
             conn.last_insert_rowid()
         };
@@ -236,16 +279,27 @@ pub fn batch_import_by_column(
                 )?;
             }
         }
-
         *type_counter.entry(method_type.clone()).or_insert(0) += 1;
+    }
+
+    // 审计日志
+    if method_count > 0 {
+        crate::repo::audit_repo::log_on_conn(conn, "import", "methods", None, "system", &format!("批量导入: {}条方法", method_count)).ok();
+    }
+    if project_count > 0 {
+        crate::repo::audit_repo::log_on_conn(conn, "import", "projects", None, "system", &format!("批量导入: {}个研发项目", project_count)).ok();
+    }
+    if group_count > 0 {
+        crate::repo::audit_repo::log_on_conn(conn, "import", "project_groups", None, "system", &format!("批量导入: {}个实验室分组", group_count)).ok();
     }
 
     Ok(ImportSummary {
         total_methods: method_count,
-        total_projects: 0,
+        total_projects: project_count,
         total_groups: group_count,
         by_type: type_counter.into_iter()
-            .map(|(k, v)| TypeCount { method_type: k, count: v }).collect(),
+            .map(|(k, v)| TypeCount { method_type: k, count: v })
+            .collect(),
     })
 }
 

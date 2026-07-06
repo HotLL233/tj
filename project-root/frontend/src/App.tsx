@@ -7,7 +7,6 @@ import SamplePortal from './pages/SamplePortal';
 import WorkloadPortal from './pages/WorkloadPortal';
 import EntryPage from './pages/EntryPage';
 import SampleEntryPage from './pages/SampleEntryPage';
-import SampleListPage from './pages/SampleListPage';
 import SampleStatsPage from './pages/SampleStatsPage';
 import StatsPage from './pages/StatsPage';
 import ManagePage from './pages/ManagePage';
@@ -29,7 +28,6 @@ const App: React.FC = () => (<ErrorBoundary><UserProvider><Routes><Route element
   {/* 送样分支: /sample → portal → entry/list/stats */}
   <Route path="/sample" element={<SamplePortal />} />
   <Route path="/sample/:groupId" element={<SampleEntryPage />} />
-  <Route path="/sample/list" element={<SampleListPage />} />
   <Route path="/sample/stats" element={<SampleStatsPage />} />
 
   {/* 工作量分支: /workload → portal → entry/stats/manage */}

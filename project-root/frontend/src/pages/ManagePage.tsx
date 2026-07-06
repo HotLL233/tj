@@ -1,29 +1,57 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Box, Typography, Paper, Button, CircularProgress, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, FormControl, InputLabel, Select,
+  Box, Typography, Paper, Button, CircularProgress, TextField, FormControl, InputLabel, Select,
   MenuItem, Switch, FormControlLabel, IconButton, Chip, TableContainer,
   Table, TableHead, TableBody, TableRow, TableCell, Alert, Snackbar,
-  Autocomplete, Checkbox, FormGroup,
+  Checkbox, FormGroup, useMediaQuery, useTheme, Autocomplete,
+  Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Grid,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add'; import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete'; import FolderIcon from '@mui/icons-material/Folder';
-import ListAltIcon from '@mui/icons-material/ListAlt'; import ScienceIcon from '@mui/icons-material/Science';
-import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'; import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import HistoryIcon from '@mui/icons-material/History'; import TuneIcon from '@mui/icons-material/Tune';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload'; import BackupIcon from '@mui/icons-material/Backup';
-import { getGroups, createGroup, updateGroup, deleteGroup, getProjects, createProject, updateProject, deleteProject, getRecords, restoreRecord, getAuditLogs, batchProjectCoefficient, getBackupStatus, backupNow, getBackupConfig, updateBackupConfig, deleteBackup, restoreBackup, getMethodTypes, createMethodType, updateMethodType, deleteMethodType, getMethods, createMethod, updateMethod, deleteMethod, methodImport } from '../api/client';
-import type { ProjectGroup, Project, WorkRecord, AuditLog, BackupStatus, MethodType, Method } from '../types';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import FolderIcon from '@mui/icons-material/Folder';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import ScienceIcon from '@mui/icons-material/Science';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import HistoryIcon from '@mui/icons-material/History';
+import TuneIcon from '@mui/icons-material/Tune';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import BackupIcon from '@mui/icons-material/Backup';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { getGroups, createGroup, updateGroup, deleteGroup, getProjects, createProject, updateProject, deleteProject, getRecords, restoreRecord, getAuditLogs, batchProjectCoefficient, getBackupStatus, backupNow, getBackupConfig, updateBackupConfig, deleteBackup, restoreBackup, restoreBackupFile, getMethodTypes, createMethodType, updateMethodType, deleteMethodType, getMethods, createMethod, updateMethod, deleteMethod, methodImport, getImportMappings } from '../api/client';
+import type { ProjectGroup, Project, WorkRecord, AuditLog, BackupStatus, MethodType, Method, ImportMapping } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
-type TV = 'projects' | 'groups' | 'methods' | 'trash' | 'audit' | 'backup';
+import InlineEditCard from '../components/InlineEditCard';
+import AssociationConfig from '../components/AssociationConfig';
 
-const R = '2px'; const cSx={borderRadius:R,fontWeight:700,border:'1px solid rgba(0,0,0,0.08)'}; const lSx={p:2,mb:1.5,borderRadius:R, border:'1px solid rgba(0,0,0,0.06)',transition:'all 0.2s','&:hover':{boxShadow:'0 4px 20px rgba(0,0,0,0.08)'}}; const tSx={borderRadius:R,border:'1px solid rgba(0,0,0,0.06)',overflow:'auto'};
-const AL: Record<string,string>={create:'创建',update:'更新',delete:'删除',restore:'恢复',import:'导入'}; const AC: Record<string,'success'|'error'|'info'|'warning'|'default'>={create:'success',update:'info',delete:'error',restore:'warning',import:'warning'}; const TL: Record<string,string>={work_records:'工作记录',projects:'项目',project_groups:'分组',samples:'送样记录'};
+type TV = 'projects' | 'groups' | 'methods' | 'association' | 'trash' | 'audit' | 'backup';
+
+const R = '2px';
+const cSx = { borderRadius: R, fontWeight: 700, border: '1px solid rgba(0,0,0,0.08)' };
+const tSx = { borderRadius: R, border: '1px solid rgba(0,0,0,0.06)', overflow: 'auto' };
+const AL: Record<string, string> = { create: '创建', update: '更新', delete: '删除', restore: '恢复', import: '导入' };
+const AC: Record<string, 'success' | 'error' | 'info' | 'warning' | 'default'> = { create: 'success', update: 'info', delete: 'error', restore: 'warning', import: 'warning' };
+const TL: Record<string, string> = { work_records: '工作记录', rd_work_records: '研发送样记录', projects: '项目', project_groups: '分组', samples: '送样记录(已退役)' };
+
+// 从方法名中提取仪器标签（@符号后的[...]内容）
+const extractInstrumentFromMethodName = (methodName: string): string | null => {
+  if (!methodName) return null;
+  const atIndex = methodName.indexOf('@');
+  if (atIndex === -1) return null;
+  const afterAt = methodName.substring(atIndex + 1);
+  const bracketStart = afterAt.indexOf('[');
+  if (bracketStart === -1) return null;
+  const bracketEnd = afterAt.indexOf(']', bracketStart);
+  if (bracketEnd === -1) return null;
+  return afterAt.substring(bracketStart + 1, bracketEnd);
+};
 
 const TC = [
   { key: 'projects', label: '研发项目管理', icon: <ListAltIcon />, desc: '研发项目及关联实验室' },
   { key: 'groups', label: '实验室管理', icon: <FolderIcon />, desc: '新增编辑实验室映射录入选项卡' },
   { key: 'methods', label: '检测方法管理', icon: <ScienceIcon />, desc: '液相/气相/理化/ICP/热分析等检测方法' },
+  { key: 'association', label: '关联配置', icon: <TuneIcon />, desc: '拖拽式关联配置' },
   { key: 'trash', label: '回收站', icon: <DeleteSweepIcon />, desc: '恢复已删除的记录' },
   { key: 'audit', label: '审计日志', icon: <ReceiptLongIcon />, desc: '操作记录追溯' },
   { key: 'backup', label: '数据备份', icon: <BackupIcon />, desc: '备份恢复与自动备份设置' },
@@ -33,28 +61,57 @@ const ManagePage: React.FC = () => {
   const [tb, setTb] = useState<TV>('projects');
   const [ld, setLd] = useState(false); const [msg, setMsg] = useState(''); const [err, setErr] = useState(false);
   const sm = useCallback((m: string, isErr?: boolean) => { setMsg(m); setErr(!!isErr); }, []);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const [co, setCo] = useState(false); const [ca, setCa] = useState<() => Promise<void>>(() => async () => { setCo(false); });
+
+  // v0.3.18: 编辑弹窗状态
+  const [projectEditOpen, setProjectEditOpen] = useState(false);
+  const [projectEditItem, setProjectEditItem] = useState<Project | null>(null);
+  const [methodEditOpen, setMethodEditOpen] = useState(false);
+  const [methodEditItem, setMethodEditItem] = useState<Method | null>(null);
+  const [groupEditOpen, setGroupEditOpen] = useState(false);
+  const [groupEditItem, setGroupEditItem] = useState<ProjectGroup | null>(null);
+
+  // v0.3.18: 方法一览弹窗状态
+  const [methodOverviewOpen, setMethodOverviewOpen] = useState(false);
+  const [methodOverviewData, setMethodOverviewData] = useState<Method[]>([]);
+  const [methodOverviewEditingId, setMethodOverviewEditingId] = useState<number | null>(null);
+  const [methodOverviewEditData, setMethodOverviewEditData] = useState<Partial<Method>>({});
+
+  // v0.3.23: 项目一览弹窗状态
+  const [projectOverviewOpen, setProjectOverviewOpen] = useState(false);
+  const [projectOverviewData, setProjectOverviewData] = useState<Project[]>([]);
+
+  // v0.3.23: 实验室一览弹窗状态
+  const [groupOverviewOpen, setGroupOverviewOpen] = useState(false);
+  const [groupOverviewData, setGroupOverviewData] = useState<ProjectGroup[]>([]);
 
   // groups
   const [gs, setGs] = useState<ProjectGroup[]>([]);
-  const [gd, setGd] = useState(false); const [gf, setGf] = useState({ id: 0, name: '', sort_order: 0 }); const [ged, setGed] = useState(false);
   const lg = useCallback(async () => { try { const r = await getGroups(); if (r.code === 0 && r.data) setGs(r.data); } catch {} }, []);
-  const hgs = async () => { if (!gf.name.trim()) { sm('请输入分组名称', true); return; } if (ged) { const r = await updateGroup(gf.id, { name: gf.name, sort_order: gf.sort_order }); if (r.code === 0) { sm('更新成功'); lg(); setGd(false); } else sm(r.message, true); } else { const r = await createGroup({ name: gf.name, sort_order: gf.sort_order }); if (r.code === 0) { sm('创建成功'); lg(); setGd(false); } else sm(r.message, true); } };
 
   // projects (v0.2.17 simplified)
-  const [ps, setPs] = useState<Project[]>([]); const [sg, setSg] = useState(0); const [pd, setPd] = useState(false);
-  const [pf, setPf] = useState({ id: 0, name: '', notes: '', lab_ids: [] as number[], method_ids: [] as number[] });
-  const [ped, setPed] = useState(false);
-  const lp = useCallback(async () => { try { const r = await getProjects({ group_id: sg || undefined }); if (r.code === 0 && r.data) setPs(r.data); } catch {} }, [sg]);
-  const hps = async () => { if (!pf.name.trim()) { sm('请输入项目名称', true); return; } if (ped) { const body: any = { name: pf.name, notes: pf.notes, lab_ids: pf.lab_ids, method_ids: pf.method_ids }; const r = await updateProject(pf.id, body); if (r.code === 0) { sm('更新成功'); lp(); setPd(false); } else sm(r.message, true); } else { const body: any = { name: pf.name, notes: pf.notes, lab_ids: pf.lab_ids, method_ids: pf.method_ids }; const r = await createProject(body); if (r.code === 0) { sm('创建成功'); lp(); setPd(false); } else sm(r.message, true); } };
-  const [bdo, setBdo] = useState(false); const [bgid, setBgid] = useState(0); const [bgn, setBgn] = useState(''); const [bcoeff, setBcoeff] = useState(1.0);
-  const hbc = async () => { if (bcoeff <= 0) { sm('系数必须大于0', true); return; } try { const r = await batchProjectCoefficient({ group_id: bgid, coefficient: bcoeff }); if (r.code === 0) { sm(r.message); lp(); setBdo(false); } else sm(r.message, true); } catch { sm('批量更新失败', true); } };
+  const [ps, setPs] = useState<Project[]>([]);
+  const lp = useCallback(async () => { try { const r = await getProjects(); if (r.code === 0 && r.data) setPs(r.data); } catch {} }, []);
 
-  // methods (v0.2.17 new — 独立 methods 表)
+  // 项目编辑 - 方法类型筛选
+  const [projectMethodTypeFilter, setProjectMethodTypeFilter] = useState('');
   const [ml, setMl] = useState<Method[]>([]);
-  const [md, setMd] = useState(false); const [mf, setMf] = useState({ id: 0, name: '', full_name: '', coefficient: 1.0, notes: '', type_ids: [] as number[] }); const [med, setMed] = useState(false);
+  const [methodFilter, setMethodFilter] = useState('');
+  const [importMappingOpen, setImportMappingOpen] = useState(false);
+  const [importMappings, setImportMappings] = useState<ImportMapping[]>([]);
   const lm = useCallback(async () => { try { const r = await getMethods(); if (r.code === 0 && r.data) setMl(r.data); } catch {} }, []);
-  const hms = async () => { if (!mf.name.trim()) { sm('请输入方法名称', true); return; } if (med) { const body: any = { name: mf.name, full_name: mf.full_name, coefficient: mf.coefficient, notes: mf.notes, type_ids: mf.type_ids }; const r = await updateMethod(mf.id, body); if (r.code === 0) { sm('更新成功'); lm(); setMd(false); } else sm(r.message, true); } else { const body: any = { name: mf.name, full_name: mf.full_name, coefficient: mf.coefficient, notes: mf.notes, type_ids: mf.type_ids }; const r = await createMethod(body); if (r.code === 0) { sm('创建成功'); lm(); setMd(false); } else sm(r.message, true); } };
+
+  // v0.3.0: 打开导入映射预览对话框
+  const handleOpenImport = async () => {
+    try {
+      const r = await getImportMappings();
+      if (r.code === 0 && r.data) { setImportMappings(r.data); }
+    } catch { setImportMappings([]); }
+    setImportMappingOpen(true);
+  };
 
   // method types
   const [mts, setMts] = useState<MethodType[]>([]);
@@ -66,7 +123,7 @@ const ManagePage: React.FC = () => {
   const [rs, setRs] = useState<WorkRecord[]>([]); const [rc, setRc] = useState(0);
   const lt = useCallback(async () => { try { const r = await getRecords({}); if (r.code === 0 && r.data) { setRs(r.data.items.filter((x: any) => false)); setRc(0); } try { const all = await getAuditLogs({ page_size: 3 }); if (all.code === 0 && all.data) setRc(all.data.total || 0); } catch {} } catch {} }, []);
   const [tr, setTr] = useState<WorkRecord[]>([]);
-  const loadTrash = async () => { try { const r = await getRecords({}); if (r.code === 0 && r.data) setTr(r.data.items.filter((x: any) => !x.is_active)); } catch {} };
+  const loadTrash = async () => { try { const r = await getRecords({ include_deleted: true }); if (r.code === 0 && r.data) setTr(r.data.items.filter((x: any) => x.deleted_at != null)); } catch {} };
 
   // audit
   const [al, setAl] = useState<AuditLog[]>([]); const [at, setAt] = useState(0); const [ap, setAp] = useState(1);
@@ -74,12 +131,101 @@ const ManagePage: React.FC = () => {
 
   // backup
   const [bk, setBk] = useState<BackupStatus | null>(null); const [bkAuto, setBkAuto] = useState(false);
-  const [bkInt, setBkInt] = useState(24); const [bkR, setBkR] = useState(''); const [bkN, setBkN] = useState(false);
-  const loadBk = async () => { try { const r = await getBackupStatus(); if (r.code === 0 && r.data) { setBk(r.data); setBkAuto(r.data.auto_enabled); setBkInt(r.data.auto_interval_hours); } } catch {} };
+  const [bkInt, setBkInt] = useState(24); const [maxBk, setMaxBk] = useState(10); const [bkR, setBkR] = useState(''); const [bkN, setBkN] = useState(false);
+  const loadBk = async () => { try { const r = await getBackupStatus(); if (r.code === 0 && r.data) { setBk(r.data); setBkAuto(r.data.auto_enabled); setBkInt(r.data.auto_interval_hours); setMaxBk(r.data.max_backup_count || 10); } } catch {} };
 
-  useEffect(() => { setLd(true); Promise.all([lg(), lp(), lt()]).finally(() => setLd(false)); }, [lg, lp, lt]);
-  useEffect(() => { lp(); }, [sg, lp]);
+  // v0.3.15: 初始加载时也加载方法类型，否则项目编辑对话框的"关联检测方法"按类型分组时 mts 为空
+  useEffect(() => { setLd(true); Promise.all([lg(), lp(), lt(), lm(), lmt()]).finally(() => setLd(false)); }, [lg, lp, lt, lm, lmt]);
   useEffect(() => { if (tb === 'audit') la(1); if (tb === 'backup') loadBk(); if (tb === 'methods') { lmt(); lm(); } if (tb === 'trash') loadTrash(); }, [tb, la, lmt, lm]);
+
+  // v0.3.18: 项目保存
+  const handleSaveProject = async (project: Project) => {
+    const body: any = {
+      name: project.name,
+      full_name: project.full_name,
+      notes: project.notes,
+      sort_order: project.sort_order,
+      is_active: project.is_active,
+      lab_ids: project.lab_ids,
+      method_ids: project.method_ids,
+    };
+    if (project.id > 0) {
+      const r = await updateProject(project.id, body);
+      if (r.code === 0) { sm('更新成功'); lp(); lg(); setProjectEditOpen(false); setProjectEditItem(null); } else sm(r.message, true);
+    } else {
+      const r = await createProject(body);
+      if (r.code === 0) { sm('创建成功'); lp(); lg(); setProjectEditOpen(false); setProjectEditItem(null); } else sm(r.message, true);
+    }
+  };
+
+  // v0.3.18: 方法保存
+  const handleSaveMethod = async (method: Method) => {
+    const body: any = {
+      name: method.name,
+      full_name: method.full_name,
+      coefficient: method.coefficient,
+      amount: method.amount,
+      notes: method.notes,
+      type_ids: method.type_ids,
+    };
+    if (method.id > 0) {
+      const r = await updateMethod(method.id, body);
+      if (r.code === 0) { sm('更新成功'); lm(); setMethodEditOpen(false); setMethodEditItem(null); } else sm(r.message, true);
+    } else {
+      const r = await createMethod(body);
+      if (r.code === 0) { sm('创建成功'); lm(); setMethodEditOpen(false); setMethodEditItem(null); } else sm(r.message, true);
+    }
+  };
+
+  // v0.3.18: 实验室保存
+  const handleSaveGroup = async (group: ProjectGroup) => {
+    if (group.id > 0) {
+      const r = await updateGroup(group.id, { name: group.name, sort_order: group.sort_order });
+      if (r.code === 0) { sm('更新成功'); lg(); setGroupEditOpen(false); setGroupEditItem(null); } else sm(r.message, true);
+    } else {
+      const r = await createGroup({ name: group.name, sort_order: group.sort_order });
+      if (r.code === 0) { sm('创建成功'); lg(); setGroupEditOpen(false); setGroupEditItem(null); } else sm(r.message, true);
+    }
+  };
+
+  // v0.3.18: 打开方法一览弹窗
+  const handleOpenMethodOverview = () => {
+    setMethodOverviewData([...ml]);
+    setMethodOverviewOpen(true);
+    setMethodOverviewEditingId(null);
+    setMethodOverviewEditData({});
+  };
+
+  // v0.3.18: 方法一览表格行内编辑保存
+  const handleSaveMethodOverview = async () => {
+    if (methodOverviewEditingId === null) return;
+    const method = methodOverviewData.find(m => m.id === methodOverviewEditingId);
+    if (!method) return;
+
+    const body: any = {
+      name: methodOverviewEditData.name ?? method.name,
+      full_name: methodOverviewEditData.full_name ?? method.full_name,
+      coefficient: methodOverviewEditData.coefficient ?? method.coefficient,
+      amount: methodOverviewEditData.amount ?? method.amount,
+      notes: methodOverviewEditData.notes ?? method.notes,
+      type_ids: methodOverviewEditData.type_ids ?? method.type_ids,
+    };
+
+    try {
+      const r = await updateMethod(methodOverviewEditingId, body);
+      if (r.code === 0) {
+        sm('更新成功');
+        lm();
+        setMethodOverviewEditingId(null);
+        setMethodOverviewEditData({});
+        setMethodOverviewData([...ml]);
+      } else {
+        sm(r.message, true);
+      }
+    } catch {
+      sm('操作失败', true);
+    }
+  };
 
   if (ld) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
 
@@ -88,70 +234,179 @@ const ManagePage: React.FC = () => {
     {msg && <Alert severity={err ? 'error' : 'success'} sx={{ mb: 2, borderRadius: R }} onClose={() => setMsg('')}>{msg}</Alert>}
 
     {/* 卡片网格 */}
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 2, mb: 3 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr 1fr', sm: '1fr 1fr 1fr', md: '1fr 1fr 1fr' }, gap: 1.5, mb: 3 }}>
       {TC.map(c => (
-        <Paper key={c.key} elevation={0} onClick={() => setTb(c.key)} sx={{ p: 2.5, borderRadius: R, cursor: 'pointer', border: '2px solid', borderColor: tb === c.key ? '#f4511e' : 'rgba(0,0,0,0.06)', transition: 'all 0.2s', '&:hover': { borderColor: '#f4511e', boxShadow: '0 4px 24px rgba(244,81,30,0.12)' } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+        <Paper key={c.key} elevation={0} onClick={() => setTb(c.key)} sx={{ p: isMobile ? 1.5 : 2.5, borderRadius: R, cursor: 'pointer', border: '2px solid', borderColor: tb === c.key ? '#f4511e' : 'rgba(0,0,0,0.06)', transition: 'all 0.2s', '&:hover': { borderColor: '#f4511e', boxShadow: '0 4px 24px rgba(244,81,30,0.12)' } }}>
+          <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'center' : 'center', gap: isMobile ? 0.5 : 1.5, mb: 0.5, textAlign: isMobile ? 'center' : 'left' }}>
             <Box sx={{ color: tb === c.key ? '#f4511e' : 'text.secondary' }}>{c.icon}</Box>
-            <Typography variant="subtitle1" fontWeight={700}>{c.label}</Typography>
+            <Typography variant={isMobile ? 'caption' : 'subtitle1'} fontWeight={700}>{c.label}</Typography>
           </Box>
-          <Typography variant="caption" color="text.secondary">{c.desc}</Typography>
+          {!isMobile && <Typography variant="caption" color="text.secondary">{c.desc}</Typography>}
         </Paper>
       ))}
     </Box>
 
-    {/* 内容区 */}
-
     {/* ── 1. 研发项目管理 (v0.2.17 简化) ── */}
     {tb === 'projects' && <Box>
-      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <FormControl size="small" sx={{ minWidth: 160 }}><InputLabel>实验室分组</InputLabel>
-            <Select value={sg} label="实验室分组" onChange={e => setSg(Number(e.target.value))} sx={{ borderRadius: R }}>
-              <MenuItem value={0}>全部实验室</MenuItem>
-              {gs.map(g => <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>)}
-            </Select>
-          </FormControl>
-          {sg > 0 && <Button size="small" variant="outlined" startIcon={<TuneIcon />} onClick={() => { setBgid(sg); setBgn(gs.find(g => g.id === sg)?.name || ''); setBcoeff(1.0); setBdo(true); }} sx={{ borderRadius: R, borderColor: '#9c27b0', color: '#9c27b0' }}>批量系数</Button>}
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setPf({ id: 0, name: '', notes: '', lab_ids: [], method_ids: [] }); setPed(false); setPd(true); }} size="small" sx={{ borderRadius: R, background: 'linear-gradient(135deg,#f4511e,#e53935)', boxShadow: '0 4px 14px rgba(244,81,30,0.3)' }}>新建研发项目</Button>
-        </Box>
+      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => {
+          setProjectEditItem({ id: 0, name: '', full_name: '', notes: '', sort_order: 0, is_active: true, lab_ids: [], method_ids: [], lab_names: [], method_names: [], type_names: [], created_at: '', updated_at: '' } as Project);
+          setProjectEditOpen(true);
+        }} size="small" sx={{ borderRadius: R, background: 'linear-gradient(135deg,#f4511e,#e53935)', boxShadow: '0 4px 14px rgba(244,81,30,0.3)' }}>新建研发项目</Button>
+        <Button variant="outlined" startIcon={<VisibilityIcon />} size="small"
+          onClick={() => {
+            setProjectOverviewData([...ps]);
+            setProjectOverviewOpen(true);
+          }}
+          sx={{ borderRadius: R, borderColor: '#1976d2', color: '#1976d2' }}
+        >
+          项目一览
+        </Button>
       </Box>
       {ps.length === 0 ? <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>暂无研发项目</Typography>
-        : ps.map(p => <Paper key={p.id} elevation={0} sx={lSx}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-            <Box>
-              <Typography variant="subtitle1" fontWeight={600}>{p.name}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                关联实验室: {p.lab_names.length > 0 ? p.lab_names.map(n => <Chip key={n} label={n} size="small" variant="outlined" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem', mr: 0.5 }} />) : '—'}
-                {p.method_names.length > 0 && <span> · 关联方法: {p.method_names.map(n => <Chip key={n} label={n} size="small" color="info" variant="outlined" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem', mr: 0.5 }} />)}</span>}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <IconButton onClick={() => { setPf({ id: p.id, name: p.name, notes: p.notes, lab_ids: p.lab_ids || [], method_ids: p.method_ids || [] }); setPed(true); setPd(true); }} size="small" sx={{ color: '#f4511e' }}><EditIcon fontSize="small" /></IconButton>
-              <IconButton onClick={() => { setCa(() => async () => { const r = await deleteProject(p.id); if (r.code === 0) { sm('删除成功'); lp(); } else sm(r.message, true); setCo(false); }); setCo(true); }} size="small" color="error"><DeleteIcon fontSize="small" /></IconButton>
-            </Box>
-          </Box>
-        </Paper>)}
+        : ps.map(p => (
+            <InlineEditCard<Project>
+              key={p.id}
+              item={p}
+              isExpanded={false}
+              onToggle={() => {}}
+              renderView={(item) => (
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={600}>{item.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    简称: {item.name} · 全称: {item.full_name || '—'}
+                    {item.is_active === false && <Chip label="已停用" size="small" color="error" sx={{ ml: 0.5, borderRadius: R, height: 20, fontSize: '0.65rem' }} />}
+                  </Typography>
+                </Box>
+              )}
+              renderEdit={() => <></>}
+              onSave={async () => {}}
+              onDelete={async () => {
+                setCa(() => async () => {
+                  const r = await deleteProject(p.id);
+                  if (r.code === 0) { sm('删除成功'); lp(); } else sm(r.message, true);
+                  setCo(false);
+                });
+                setCo(true);
+              }}
+            >
+              {/* 操作按钮 */}
+              <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                <IconButton size="small" onClick={() => { setProjectEditItem(p); setProjectEditOpen(true); }} sx={{ color: '#f4511e' }}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton size="small" color="error" onClick={() => {
+                  setCa(() => async () => {
+                    const r = await deleteProject(p.id);
+                    if (r.code === 0) { sm('删除成功'); lp(); } else sm(r.message, true);
+                    setCo(false);
+                  });
+                  setCo(true);
+                }}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              {/* 关联标签展示 */}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                {(p.lab_names || []).map(n => (
+                  <Chip
+                    key={n}
+                    label={n}
+                    size="small"
+                    onDelete={() => {
+                      const group = gs.find(g => g.name === n);
+                      if (group) {
+                        const newLabIds = (p.lab_ids || []).filter(id => id !== group.id);
+                        updateProject(p.id, { ...p, lab_ids: newLabIds }).then(r => {
+                          if (r.code === 0) { lp(); }
+                        });
+                      }
+                    }}
+                    sx={{ borderRadius: '10px', height: 20, fontSize: '0.7rem', backgroundColor: 'var(--color-background-info, #e3f2fd)' }}
+                  />
+                ))}
+                {(p.method_names || []).map(n => (
+                  <Chip
+                    key={n}
+                    label={n}
+                    size="small"
+                    color="info"
+                    onDelete={() => {
+                      const method = ml.find(m => m.name === n);
+                      if (method) {
+                        const newMethodIds = (p.method_ids || []).filter(id => id !== method.id);
+                        updateProject(p.id, { ...p, method_ids: newMethodIds }).then(r => {
+                          if (r.code === 0) { lp(); }
+                        });
+                      }
+                    }}
+                    sx={{ borderRadius: '10px', height: 20, fontSize: '0.7rem' }}
+                  />
+                ))}
+              </Box>
+            </InlineEditCard>
+          ))}
     </Box>}
 
     {/* ── 2. 实验室管理 ── */}
     {tb === 'groups' && <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setGf({ id: 0, name: '', sort_order: 0 }); setGed(false); setGd(true); }} size="small" sx={{ borderRadius: R, background: 'linear-gradient(135deg,#f4511e,#e53935)', boxShadow: '0 4px 14px rgba(244,81,30,0.3)' }}>新建实验室</Button>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 1 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => {
+          setGroupEditItem({ id: 0, name: '', sort_order: 0, created_at: '', updated_at: '' } as ProjectGroup);
+          setGroupEditOpen(true);
+        }} size="small" sx={{ borderRadius: R, background: 'linear-gradient(135deg,#f4511e,#e53935)', boxShadow: '0 4px 14px rgba(244,81,30,0.3)' }}>新建实验室</Button>
+        <Button variant="outlined" startIcon={<VisibilityIcon />} size="small"
+          onClick={() => {
+            setGroupOverviewData([...gs]);
+            setGroupOverviewOpen(true);
+          }}
+          sx={{ borderRadius: R, borderColor: '#1976d2', color: '#1976d2' }}>
+          实验室一览
+        </Button>
       </Box>
       <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>实验室分组直接映射为工作量录入界面的选项卡</Typography>
       {gs.length === 0 ? <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>暂无实验室分组</Typography>
-        : gs.map(g => <Paper key={g.id} elevation={0} sx={lSx}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box><Typography variant="subtitle1" fontWeight={600}>{g.name}</Typography><Typography variant="caption" color="text.secondary">排序: {g.sort_order}</Typography></Box>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <IconButton onClick={() => { setGf({ id: g.id, name: g.name, sort_order: g.sort_order }); setGed(true); setGd(true); }} size="small" sx={{ color: '#f4511e' }}><EditIcon fontSize="small" /></IconButton>
-              <IconButton onClick={() => { setCa(() => async () => { const r = await deleteGroup(g.id); if (r.code === 0) { sm('删除成功'); lg(); } else sm(r.message, true); setCo(false); }); setCo(true); }} size="small" color="error"><DeleteIcon fontSize="small" /></IconButton>
-            </Box>
-          </Box>
-        </Paper>)}
+        : gs.map(g => (
+            <InlineEditCard<ProjectGroup>
+              key={g.id}
+              item={g}
+              isExpanded={false}
+              onToggle={() => {}}
+              renderView={(item) => (
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={600}>{item.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">排序: {item.sort_order}</Typography>
+                </Box>
+              )}
+              renderEdit={() => <></>}
+              onSave={async () => {}}
+              onDelete={async () => {
+                setCa(() => async () => {
+                  const r = await deleteGroup(g.id);
+                  if (r.code === 0) { sm('删除成功'); lg(); } else sm(r.message, true);
+                  setCo(false);
+                });
+                setCo(true);
+              }}
+            >
+              {/* 操作按钮 */}
+              <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                <IconButton size="small" onClick={() => { setGroupEditItem(g); setGroupEditOpen(true); }} sx={{ color: '#f4511e' }}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton size="small" color="error" onClick={() => {
+                  setCa(() => async () => {
+                    const r = await deleteGroup(g.id);
+                    if (r.code === 0) { sm('删除成功'); lg(); } else sm(r.message, true);
+                    setCo(false);
+                  });
+                  setCo(true);
+                }}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </InlineEditCard>
+          ))}
     </Box>}
 
     {/* ── 3. 检测方法管理 (v0.2.17 独立 methods API) ── */}
@@ -160,45 +415,130 @@ const ManagePage: React.FC = () => {
         <Box>
           <Typography variant="subtitle1" fontWeight={700}>检测方法管理</Typography>
           <Typography variant="caption" color="text.secondary">
-            共 {ml.length} 条方法 · 
+            共 {ml.length} 条方法 ·
             <Button size="small" onClick={() => { setMtf({ id: 0, name: '', sort_order: 10 }); setMtd(true); }} sx={{ minWidth: 'auto', p: 0, ml: 0.5, fontSize: '0.7rem' }}>管理类型</Button>
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" component="label" startIcon={<CloudUploadIcon />} size="small"
-            sx={{ borderRadius: R, borderColor: '#00897b', color: '#00897b' }}>
-            导入方法
-            <input type="file" accept=".xlsx" hidden onChange={async (e) => {
-              const f = e.target.files?.[0]; if (!f) return;
-              try { const r = await methodImport(f); sm(`导入成功: ${r.data?.total_methods || 0}条方法, ${r.data?.total_groups || 0}个分组`); lm(); }
-              catch { sm('导入失败', true); } e.target.value = '';
-            }} />
+          <Button variant="outlined" startIcon={<VisibilityIcon />} size="small"
+            onClick={handleOpenMethodOverview}
+            sx={{ borderRadius: R, borderColor: '#1976d2', color: '#1976d2' }}>
+            方法一览
           </Button>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setMf({ id: 0, name: '', full_name: '', coefficient: 1.0, notes: '', type_ids: [] }); setMed(false); setMd(true); }} size="small" sx={{ borderRadius: R, background: 'linear-gradient(135deg,#f4511e,#e53935)', boxShadow: '0 4px 14px rgba(244,81,30,0.3)' }}>新建方法</Button>
+          <FormControl size="small" sx={{ minWidth: 120, '& .MuiOutlinedInput-root': { borderRadius: R } }}>
+            <InputLabel>类型筛选</InputLabel>
+            <Select
+              value={methodFilter}
+              label="类型筛选"
+              onChange={e => setMethodFilter(e.target.value)}
+            >
+              <MenuItem value="">全部</MenuItem>
+              {mts.filter(t => t.name !== '检测类型').map(t => (
+                <MenuItem key={t.id} value={t.name}>{t.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button variant="outlined" startIcon={<CloudUploadIcon />} size="small"
+            onClick={handleOpenImport}
+            sx={{ borderRadius: R, borderColor: '#00897b', color: '#00897b', width: isMobile ? '100%' : undefined }}>
+            导入方法
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => {
+            setMethodEditItem({ id: 0, name: '', full_name: '', coefficient: 1.0, amount: 0, notes: '', type_ids: [] as number[], type_names: [] as string[], is_active: true, created_at: '', updated_at: '' } as Method);
+            setMethodEditOpen(true);
+          }} size="small" sx={{ borderRadius: R, background: 'linear-gradient(135deg,#f4511e,#e53935)', boxShadow: '0 4px 14px rgba(244,81,30,0.3)' }}>新建方法</Button>
         </Box>
       </Box>
-      {ml.length === 0 ? <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>暂无检测方法数据，请先导入方法或手动创建</Typography>
-        : ml.map(m => <Paper key={m.id} elevation={0} sx={lSx}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-            <Box>
-              <Typography variant="subtitle1" fontWeight={600}>{m.name}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                类型: {m.type_names.length > 0 ? m.type_names.map(t => <Chip key={t} label={t} size="small" variant="outlined" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem', mr: 0.5 }} />) : <Chip label="未分类" size="small" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem' }} />}
-                系数: <Chip label={(m.coefficient ?? 1).toFixed(1)} size="small" variant="outlined" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem' }} />
-                {m.full_name ? <Chip label={m.full_name} size="small" sx={{ borderRadius: R, height: 20, fontSize: '0.65rem', color: '#666' }} /> : null}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <IconButton onClick={() => { setMf({ id: m.id, name: m.name, full_name: m.full_name || '', coefficient: m.coefficient ?? 1.0, notes: m.notes || '', type_ids: m.type_ids || [] }); setMed(true); setMd(true); }} size="small" sx={{ color: '#f4511e' }}><EditIcon fontSize="small" /></IconButton>
-              <IconButton onClick={() => { setCa(() => async () => { const r = await deleteMethod(m.id); if (r.code === 0) { sm('删除成功'); lm(); } else sm(r.message, true); setCo(false); }); setCo(true); }} size="small" color="error"><DeleteIcon fontSize="small" /></IconButton>
-            </Box>
-          </Box>
-        </Paper>)}
+      {ml.filter(m => !methodFilter || m.type_names.includes(methodFilter)).length === 0 ? <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>暂无检测方法数据，请先导入方法或手动创建</Typography>
+        : ml.filter(m => !methodFilter || m.type_names.includes(methodFilter)).map(m => (
+            <InlineEditCard<Method>
+              key={m.id}
+              item={m}
+              isExpanded={false}
+              onToggle={() => {}}
+              renderView={(item) => (
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography variant="subtitle1" fontWeight={600}>{item.name}</Typography>
+                    {/* 仪器标签 */}
+                    {extractInstrumentFromMethodName(item.name) && (
+                      <Chip
+                        label={`仪器: ${extractInstrumentFromMethodName(item.name)}`}
+                        size="small"
+                        sx={{
+                          borderRadius: R,
+                          fontSize: '0.7rem',
+                          bgcolor: '#9c27b0',
+                          color: '#fff',
+                          fontWeight: 600
+                        }}
+                      />
+                    )}
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    类型: {item.type_names.length > 0 ? item.type_names.map(t => <Chip key={t} label={t} size="small" variant="outlined" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem', mr: 0.5 }} />) : <Chip label="未分类" size="small" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem' }} />}
+                    系数: <Chip label={(item.coefficient ?? 1).toFixed(1)} size="small" variant="outlined" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem', ml: 0.5 }} />
+                    单价: <Chip label={((item.amount ?? 0).toFixed(2))} size="small" variant="outlined" color="primary" sx={{ borderRadius: R, height: 20, fontSize: '0.7rem', ml: 0.5 }} />
+                  </Typography>
+                </Box>
+              )}
+              renderEdit={() => <></>}
+              onSave={async () => {}}
+              onDelete={async () => {
+                setCa(() => async () => {
+                  const r = await deleteMethod(m.id);
+                  if (r.code === 0) { sm('删除成功'); lm(); } else sm(r.message, true);
+                  setCo(false);
+                });
+                setCo(true);
+              }}
+            >
+              {/* 操作按钮 */}
+              <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                <IconButton size="small" onClick={() => { setMethodEditItem(m); setMethodEditOpen(true); }} sx={{ color: '#f4511e' }}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton size="small" color="error" onClick={() => {
+                  setCa(() => async () => {
+                    const r = await deleteMethod(m.id);
+                    if (r.code === 0) { sm('删除成功'); lm(); } else sm(r.message, true);
+                    setCo(false);
+                  });
+                  setCo(true);
+                }}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              {/* 关联类型标签展示 */}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                {(m.type_names || []).map(n => (
+                  <Chip
+                    key={n}
+                    label={n}
+                    size="small"
+                    onDelete={() => {
+                      const type = mts.find(t => t.name === n);
+                      if (type) {
+                        const newTypeIds = (m.type_ids || []).filter(id => id !== type.id);
+                        updateMethod(m.id, { ...m, type_ids: newTypeIds }).then(r => {
+                          if (r.code === 0) { lm(); }
+                        });
+                      }
+                    }}
+                    sx={{ borderRadius: '10px', height: 20, fontSize: '0.7rem', backgroundColor: 'var(--color-background-info, #e3f2fd)' }}
+                  />
+                ))}
+              </Box>
+            </InlineEditCard>
+          ))}
     </Box>}
+
+    {/* ── 4. 关联配置（拖拽式） ── */}
+    {tb === 'association' && <AssociationConfig />}
 
     {/* ── 回收站 ── */}
     {tb === 'trash' && <Box>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}><DeleteSweepIcon fontSize="small" />共 {rc} 条已删除记录</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}><DeleteSweepIcon fontSize="small" />共 {tr.length} 条已删除记录</Typography>
       {tr.length === 0 ? <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>回收站为空</Typography>
         : <TableContainer component={Paper} className="table-responsive" sx={tSx}><Table size="small"><TableHead><TableRow>
           <TableCell sx={{ fontWeight: 600 }}>日期</TableCell><TableCell sx={{ fontWeight: 600 }}>项目</TableCell><TableCell sx={{ fontWeight: 600 }}>用户</TableCell><TableCell align="right" sx={{ fontWeight: 600 }}>数量</TableCell><TableCell align="right" sx={{ fontWeight: 600 }}>操作</TableCell>
@@ -210,8 +550,8 @@ const ManagePage: React.FC = () => {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}><HistoryIcon fontSize="small" />共 {at} 条操作记录</Typography>
       {al.length === 0 ? <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>暂无审计日志</Typography> : <>
         <TableContainer component={Paper} className="table-responsive" sx={tSx}><Table size="small"><TableHead><TableRow>
-          <TableCell sx={{ fontWeight: 600 }}>时间</TableCell><TableCell sx={{ fontWeight: 600 }}>操作类型</TableCell><TableCell sx={{ fontWeight: 600 }}>操作对象</TableCell><TableCell sx={{ fontWeight: 600 }}>记录ID</TableCell><TableCell sx={{ fontWeight: 600 }}>操作人</TableCell>
-        </TableRow></TableHead><TableBody>{al.map(l => <TableRow key={l.id} hover><TableCell sx={{ whiteSpace: 'nowrap' }}>{l.created_at}</TableCell><TableCell><Chip label={AL[l.action] || l.action} size="small" color={AC[l.action] || 'default'} variant="outlined" sx={{ borderRadius: R }} /></TableCell><TableCell>{TL[l.table_name] || l.table_name}</TableCell><TableCell>{l.record_id}</TableCell><TableCell>{l.user_name}</TableCell></TableRow>)}</TableBody></Table></TableContainer>
+          <TableCell sx={{ fontWeight: 600 }}>时间</TableCell><TableCell sx={{ fontWeight: 600 }}>操作类型</TableCell><TableCell sx={{ fontWeight: 600 }}>操作对象</TableCell><TableCell sx={{ fontWeight: 600 }}>记录ID</TableCell><TableCell sx={{ fontWeight: 600 }}>操作人</TableCell><TableCell sx={{ fontWeight: 600 }}>详情</TableCell>
+        </TableRow></TableHead><TableBody>{al.map(l => <TableRow key={l.id} hover><TableCell sx={{ whiteSpace: 'nowrap' }}>{l.created_at}</TableCell><TableCell><Chip label={AL[l.action] || l.action} size="small" color={AC[l.action] || 'default'} variant="outlined" sx={{ borderRadius: R }} /></TableCell><TableCell>{TL[l.table_name] || l.table_name}</TableCell><TableCell>{l.record_id}</TableCell><TableCell>{l.user_name}</TableCell><TableCell sx={{ maxWidth: 300 }}><Tooltip title={l.detail || ''} arrow placement="top"><Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.detail}</Typography></Tooltip></TableCell></TableRow>)}</TableBody></Table></TableContainer>
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 1 }}>
           <Button size="small" disabled={ap <= 1} onClick={() => la(ap - 1)} sx={{ borderRadius: R }}>上一页</Button>
           <Typography variant="body2">{ap} / {Math.max(1, Math.ceil(at / 50))}</Typography>
@@ -230,93 +570,489 @@ const ManagePage: React.FC = () => {
         <Typography variant="subtitle2" fontWeight={700} gutterBottom>数据库状态</Typography>
         <Typography variant="body2">大小: <strong>{(bk.db_size / 1024).toFixed(1)} KB</strong> · 备份数: <strong>{bk.backup_count}</strong> · 上次: <strong>{bk.last_backup || '无'}</strong></Typography>
         {bk.tables && bk.tables.length > 0 && <Box sx={{ mt: 1, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>{bk.tables.map(t => <Chip key={t.table} label={`${t.table}: ${t.rows}条`} size="small" variant="outlined" sx={{ borderRadius: R, fontSize: '0.7rem' }} />)}</Box>}
+        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.72rem', mt: 1, color: 'text.disabled', wordBreak: 'break-all' }}>备份路径: {bk.backups_dir}</Typography>
       </Paper>}
       <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: R, border: '1px solid rgba(0,0,0,0.06)' }}>
         <Typography variant="subtitle2" fontWeight={700} gutterBottom>自动备份设置</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
           <FormControlLabel control={<Switch checked={bkAuto} onChange={async (e) => { const v = e.target.checked; setBkAuto(v); await updateBackupConfig({ enabled: v, interval_hours: bkInt }); sm('设置已保存'); }} />} label="启用自动备份" />
           <TextField label="间隔(小时)" type="number" size="small" value={bkInt} onChange={e => setBkInt(Number(e.target.value) || 1)} inputProps={{ min: 1 }} sx={{ width: 100, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
-          <Button size="small" variant="outlined" onClick={async () => { await updateBackupConfig({ enabled: bkAuto, interval_hours: bkInt }); sm('设置已保存'); }} sx={{ borderRadius: R }}>保存设置</Button>
+          <TextField label="最大备份数" type="number" size="small" value={maxBk} onChange={e => setMaxBk(Number(e.target.value) || 1)} inputProps={{ min: 1, max: 50 }} sx={{ width: 100, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+          <Button size="small" variant="outlined" onClick={async () => { await updateBackupConfig({ enabled: bkAuto, interval_hours: bkInt, max_backup_count: maxBk }); sm('设置已保存'); }} sx={{ borderRadius: R }}>保存设置</Button>
         </Box>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>修改后需重启程序生效</Typography>
       </Paper>
       {bk && bk.backup_files.length > 0 && <Paper elevation={0} sx={{ p: 2, borderRadius: R, border: '1px solid rgba(0,0,0,0.06)' }}>
         <Typography variant="subtitle2" fontWeight={700} gutterBottom>备份文件列表 ({bk.backup_count} 个)</Typography>
-        {bk.backup_files.map(f => <Box key={f.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, borderBottom: '1px solid rgba(0,0,0,0.04)' }}><Box><Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{f.name}</Typography><Typography variant="caption" color="text.secondary">{(f.size / 1024).toFixed(1)} KB · {f.time || ''}</Typography></Box><IconButton size="small" color="error" onClick={async () => { if (!window.confirm('确定删除?')) return; try { const r = await deleteBackup(f.name); sm(r.message || '已删除'); await loadBk(); } catch { sm('删除失败', true); } }}><DeleteIcon fontSize="small" /></IconButton></Box>)}
+        {bk.backup_files.map(f => <Box key={f.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, borderBottom: '1px solid rgba(0,0,0,0.04)' }}><Box><Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{f.name}</Typography><Typography variant="caption" color="text.secondary">{(f.size / 1024).toFixed(1)} KB · {f.time || ''}</Typography></Box><Box sx={{ display: 'flex', gap: 0.5 }}><Button size="small" variant="outlined" sx={{ borderRadius: R, fontSize: '0.7rem', py: 0, minWidth: 'auto' }} onClick={async () => { if (!window.confirm(`恢复备份「${f.name}」将替换当前数据库，确定继续？`)) return; try { const r = await restoreBackupFile(f.name); sm(r.message || '恢复成功'); await loadBk(); } catch { sm('恢复失败', true); } }}>恢复</Button><IconButton size="small" color="error" onClick={async () => { if (!window.confirm('确定删除?')) return; try { const r = await deleteBackup(f.name); sm(r.message || '已删除'); await loadBk(); } catch { sm('删除失败', true); } }}><DeleteIcon fontSize="small" /></IconButton></Box></Box>)}
       </Paper>}
     </Box>}
 
-    {/* ── 对话框 ── */}
-    {/* 项目对话框 (v0.2.17 简化) */}
-    <Dialog open={pd} onClose={() => setPd(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
-      <DialogTitle sx={{ fontWeight: 700 }}>{ped ? '编辑项目' : '新建研发项目'}</DialogTitle>
+    {/* ── 对话框（保留：方法类型管理、确认对话框、导入映射、v0.3.18 编辑弹窗、方法一览） ── */}
+
+    {/* v0.3.18: 项目编辑弹窗 */}
+    <Dialog open={projectEditOpen} onClose={() => { setProjectEditOpen(false); setProjectEditItem(null); }} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>{projectEditItem?.id ? '编辑项目' : '新建项目'}</DialogTitle>
       <DialogContent>
-        <TextField label="项目名称" fullWidth value={pf.name} onChange={e => setPf({ ...pf, name: e.target.value })} sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
-        <Autocomplete multiple options={gs} getOptionLabel={(g: ProjectGroup) => g.name}
-          value={gs.filter(g => (pf.lab_ids || []).includes(g.id))}
-          onChange={(_, v) => setPf({ ...pf, lab_ids: v.map(g => g.id) })}
-          renderInput={(params) => <TextField {...params} label="关联实验室" sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />}
-          renderTags={(value, getTagProps) => value.map((option, index) => (
-            <Chip label={option.name} size="small" {...getTagProps({ index })} sx={{ borderRadius: R }} />
-          ))}
-        />
-        <Autocomplete multiple options={ml} getOptionLabel={(m: Method) => m.name}
-          value={ml.filter(m => (pf.method_ids || []).includes(m.id))}
-          onChange={(_, v) => setPf({ ...pf, method_ids: v.map(m => m.id) })}
-          renderInput={(params) => <TextField {...params} label="关联方法" sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />}
-          renderTags={(value, getTagProps) => value.map((option, index) => (
-            <Chip label={option.name} size="small" {...getTagProps({ index })} sx={{ borderRadius: R }} />
-          ))}
-        />
-        <TextField label="备注" fullWidth multiline minRows={2} maxRows={4} value={pf.notes} onChange={e => setPf({ ...pf, notes: e.target.value })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+        {projectEditItem && <>
+          <TextField label="项目名称" fullWidth value={projectEditItem.name} onChange={e => setProjectEditItem({ ...projectEditItem, name: e.target.value })} sx={{ mt: 2, mb: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+          <TextField label="全称" fullWidth value={projectEditItem.full_name || ''} onChange={e => setProjectEditItem({ ...projectEditItem, full_name: e.target.value })} sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>关联实验室</Typography>
+          <Box sx={{ maxHeight: 200, overflow: 'auto', border: '1px solid rgba(0,0,0,0.12)', borderRadius: R, p: 1, mb: 2 }}>
+            <FormGroup>
+              {gs.filter(g => g.name !== '研发项目').map(g => (
+                <FormControlLabel key={g.id}
+                  control={<Checkbox checked={(projectEditItem.lab_ids || []).includes(g.id)} onChange={(e) => {
+                    if (e.target.checked) { setProjectEditItem({ ...projectEditItem, lab_ids: [...(projectEditItem.lab_ids || []), g.id] }); }
+                    else { setProjectEditItem({ ...projectEditItem, lab_ids: (projectEditItem.lab_ids || []).filter(id => id !== g.id) }); }
+                  }} />}
+                  label={g.name} />
+              ))}
+              {gs.filter(g => g.name !== '研发项目').length === 0 && <Typography variant="caption" color="text.secondary">暂无实验室</Typography>}
+            </FormGroup>
+          </Box>
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>关联检测方法</Typography>
+          <FormControl size="small" sx={{ minWidth: 120, mb: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }}>
+            <InputLabel>按类型筛选</InputLabel>
+            <Select
+              value={projectMethodTypeFilter}
+              label="按类型筛选"
+              onChange={e => setProjectMethodTypeFilter(e.target.value)}
+            >
+              <MenuItem value="">全部</MenuItem>
+              {mts.filter(t => t.name !== '检测类型').map(t => (
+                <MenuItem key={t.id} value={t.name}>{t.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Box sx={{ maxHeight: 300, overflow: 'auto', border: '1px solid rgba(0,0,0,0.12)', borderRadius: R, p: 1, mb: 2 }}>
+            {(projectMethodTypeFilter ? mts.filter(t => t.name === projectMethodTypeFilter) : mts.filter(t => t.name !== '检测类型')).map(type => {
+              const typeMethods = ml.filter(m => m.type_names.includes(type.name));
+              if (typeMethods.length === 0) return null;
+              return (
+                <Box key={type.id} sx={{ mb: 1 }}>
+                  <Typography variant="caption" fontWeight={600} color="text.secondary">{type.name}</Typography>
+                  <FormGroup row>
+                    {typeMethods.map(m => (
+                      <FormControlLabel
+                        key={m.id}
+                        control={<Checkbox
+                          checked={(projectEditItem.method_ids || []).includes(m.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setProjectEditItem({ ...projectEditItem, method_ids: [...(projectEditItem.method_ids || []), m.id] });
+                            } else {
+                              setProjectEditItem({ ...projectEditItem, method_ids: (projectEditItem.method_ids || []).filter(id => id !== m.id) });
+                            }
+                          }}
+                          size="small"
+                        />}
+                        label={<Typography variant="caption">{m.name}</Typography>}
+                        sx={{ mr: 2, mb: 0.5 }}
+                      />
+                    ))}
+                  </FormGroup>
+                </Box>
+              );
+            })}
+            {ml.length === 0 && <Typography variant="caption" color="text.secondary">暂无检测方法，请先导入或创建</Typography>}
+          </Box>
+          <FormControlLabel control={<Switch checked={projectEditItem.is_active} onChange={e => setProjectEditItem({ ...projectEditItem, is_active: e.target.checked })} />} label="启用" />
+          <TextField label="备注" fullWidth multiline minRows={2} maxRows={4} value={projectEditItem.notes || ''} onChange={e => setProjectEditItem({ ...projectEditItem, notes: e.target.value })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+        </>}
       </DialogContent>
-      <DialogActions><Button onClick={() => setPd(false)} sx={{ borderRadius: R }}>取消</Button><Button onClick={hps} variant="contained" sx={{ borderRadius: R }}>保存</Button></DialogActions>
+      <DialogActions>
+        <Button onClick={() => { setProjectEditOpen(false); setProjectEditItem(null); }} sx={{ borderRadius: R }}>取消</Button>
+        <Button onClick={() => { if (projectEditItem) handleSaveProject(projectEditItem); }} variant="contained" sx={{ borderRadius: R }}>保存</Button>
+      </DialogActions>
     </Dialog>
 
-    {/* 分组对话框 */}
-    <Dialog open={gd} onClose={() => setGd(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
-      <DialogTitle sx={{ fontWeight: 700 }}>{ged ? '编辑实验室' : '新建实验室'}</DialogTitle>
+    {/* v0.3.18: 方法编辑弹窗 */}
+    <Dialog open={methodEditOpen} onClose={() => { setMethodEditOpen(false); setMethodEditItem(null); }} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>{methodEditItem?.id ? '编辑方法' : '新建方法'}</DialogTitle>
       <DialogContent>
-        <TextField label="实验室名称" fullWidth value={gf.name} onChange={e => setGf({ ...gf, name: e.target.value })} sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
-        <TextField label="排序" type="number" fullWidth value={gf.sort_order} onChange={e => setGf({ ...gf, sort_order: Number(e.target.value) })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+        {methodEditItem && <>
+          <TextField label="方法名称" fullWidth value={methodEditItem.name} onChange={e => setMethodEditItem({ ...methodEditItem, name: e.target.value })} sx={{ mt: 2, mb: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+          <TextField label="全称" fullWidth value={methodEditItem.full_name || ''} onChange={e => setMethodEditItem({ ...methodEditItem, full_name: e.target.value })} sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+          <TextField label="管理系数" type="number" fullWidth value={methodEditItem.coefficient} onChange={e => setMethodEditItem({ ...methodEditItem, coefficient: Number(e.target.value) || 1.0 })} sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} inputProps={{ min: 0, step: 0.1 }} />
+          <TextField label="单价" type="number" fullWidth value={methodEditItem.amount} onChange={e => setMethodEditItem({ ...methodEditItem, amount: Number(e.target.value) || 0 })} sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} inputProps={{ min: 0, step: 0.01 }} />
+          <TextField label="备注" fullWidth multiline minRows={2} value={methodEditItem.notes || ''} onChange={e => setMethodEditItem({ ...methodEditItem, notes: e.target.value })} sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>类型归属</Typography>
+          <FormGroup row>
+            {mts.filter(t => t.name !== '检测类型').map(t => (
+              <FormControlLabel key={t.id}
+                control={<Checkbox checked={(methodEditItem.type_ids || []).includes(t.id)} onChange={(e) => {
+                  if (e.target.checked) { setMethodEditItem({ ...methodEditItem, type_ids: [...(methodEditItem.type_ids || []), t.id] }); }
+                  else { setMethodEditItem({ ...methodEditItem, type_ids: (methodEditItem.type_ids || []).filter(id => id !== t.id) }); }
+                }} />}
+                label={t.name}
+              />
+            ))}
+          </FormGroup>
+        </>}
       </DialogContent>
-      <DialogActions><Button onClick={() => setGd(false)} sx={{ borderRadius: R }}>取消</Button><Button onClick={hgs} variant="contained" sx={{ borderRadius: R }}>保存</Button></DialogActions>
+      <DialogActions>
+        <Button onClick={() => { setMethodEditOpen(false); setMethodEditItem(null); }} sx={{ borderRadius: R }}>取消</Button>
+        <Button onClick={() => { if (methodEditItem) handleSaveMethod(methodEditItem); }} variant="contained" sx={{ borderRadius: R }}>保存</Button>
+      </DialogActions>
     </Dialog>
 
-    {/* 批量系数对话框 */}
-    <Dialog open={bdo} onClose={() => setBdo(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
-      <DialogTitle sx={{ fontWeight: 700 }}>批量设置系数 — {bgn}</DialogTitle>
+    {/* v0.3.18: 实验室编辑弹窗 */}
+    <Dialog open={groupEditOpen} onClose={() => { setGroupEditOpen(false); setGroupEditItem(null); }} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>{groupEditItem?.id ? '编辑实验室' : '新建实验室'}</DialogTitle>
       <DialogContent>
-        <TextField label="系数" type="number" fullWidth value={bcoeff} onChange={e => setBcoeff(Number(e.target.value) || 1.0)} inputProps={{ min: 0, step: 0.1 }} sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }} helperText="将更新此实验室下所有项目" />
+        {groupEditItem && <>
+          <TextField label="实验室名称" fullWidth value={groupEditItem.name} onChange={e => setGroupEditItem({ ...groupEditItem, name: e.target.value })} sx={{ mt: 2, mb: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+          <TextField label="排序" type="number" fullWidth value={groupEditItem.sort_order} onChange={e => setGroupEditItem({ ...groupEditItem, sort_order: Number(e.target.value) || 0 })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: R } }} />
+        </>}
       </DialogContent>
-      <DialogActions><Button onClick={() => setBdo(false)} sx={{ borderRadius: R }}>取消</Button><Button onClick={hbc} variant="contained" color="secondary" sx={{ borderRadius: R }}>更新</Button></DialogActions>
+      <DialogActions>
+        <Button onClick={() => { setGroupEditOpen(false); setGroupEditItem(null); }} sx={{ borderRadius: R }}>取消</Button>
+        <Button onClick={() => { if (groupEditItem) handleSaveGroup(groupEditItem); }} variant="contained" sx={{ borderRadius: R }}>保存</Button>
+      </DialogActions>
     </Dialog>
 
-    {/* 方法对话框 (v0.2.17 新增) */}
-    <Dialog open={md} onClose={() => setMd(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
-      <DialogTitle sx={{ fontWeight: 700 }}>{med ? '编辑方法' : '新建方法'}</DialogTitle>
+    {/* v0.3.19: 方法一览弹窗（直接内联编辑，无需双击/操作列） */}
+    <Dialog open={methodOverviewOpen} onClose={() => setMethodOverviewOpen(false)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>方法一览</DialogTitle>
       <DialogContent>
-        <TextField label="方法名称" fullWidth value={mf.name} onChange={e => setMf({ ...mf, name: e.target.value })} sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
-        <TextField label="全称" fullWidth value={mf.full_name} onChange={e => setMf({ ...mf, full_name: e.target.value })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
-        <TextField label="管理系数" type="number" fullWidth value={mf.coefficient} onChange={e => setMf({ ...mf, coefficient: Number(e.target.value) || 1.0 })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} inputProps={{ min: 0, step: 0.1 }} />
-        <TextField label="备注" fullWidth multiline minRows={2} value={mf.notes} onChange={e => setMf({ ...mf, notes: e.target.value })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
-        <Typography variant="body2" sx={{ mt: 2, mb: 0.5, fontWeight: 600 }}>类型归属</Typography>
-        <FormGroup row>
-          {mts.filter(t => !['检测类型','其他'].includes(t.name)).map(t => (
-            <FormControlLabel key={t.id}
-              control={<Checkbox checked={mf.type_ids.includes(t.id)} onChange={(e) => { if (e.target.checked) { setMf({ ...mf, type_ids: [...mf.type_ids, t.id] }); } else { setMf({ ...mf, type_ids: mf.type_ids.filter(id => id !== t.id) }); } }} />}
-              label={t.name}
-            />
-          ))}
-        </FormGroup>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          共 {methodOverviewData.length} 条方法，直接在单元格内编辑，失焦自动保存
+        </Typography>
+        <TableContainer component={Paper} sx={{ borderRadius: R, border: '1px solid rgba(0,0,0,0.06)' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>方法名称</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>类型</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>系数</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>单价</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>对应仪器</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {methodOverviewData.map(m => {
+                const instrument = extractInstrumentFromMethodName(m.name);
+                return (
+                  <TableRow key={m.id} hover>
+                    <TableCell sx={{ p: 0.5 }}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        defaultValue={m.name}
+                        onBlur={async (e) => {
+                          const val = e.target.value;
+                          if (val !== m.name) {
+                            try {
+                              await updateMethod(m.id, { ...m, name: val });
+                              sm('已保存');
+                              // 立即更新 methodOverviewData，确保 UI 实时刷新
+                              setMethodOverviewData(prev => prev.map(item =>
+                                item.id === m.id ? { ...item, name: val } : item
+                              ));
+                              lm();
+                            } catch { sm('保存失败', true); }
+                          }
+                        }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ p: 0.5 }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.3 }}>
+                        {mts.filter(t => t.name !== '检测类型').map(t => (
+                          <Chip
+                            key={t.id}
+                            label={t.name}
+                            size="small"
+                            clickable
+                            color={(m.type_ids || []).includes(t.id) ? 'primary' : 'default'}
+                            variant={(m.type_ids || []).includes(t.id) ? 'filled' : 'outlined'}
+                            sx={{ borderRadius: R, fontSize: '0.7rem', height: 22 }}
+                            onClick={async () => {
+                              const current = m.type_ids || [];
+                              const next = current.includes(t.id)
+                                ? current.filter(id => id !== t.id)
+                                : [...current, t.id];
+                              try {
+                                await updateMethod(m.id, { ...m, type_ids: next });
+                                sm('已保存');
+                                // 立即更新 methodOverviewData，确保 UI 实时刷新
+                                setMethodOverviewData(prev => prev.map(item =>
+                                  item.id === m.id ? { ...item, type_ids: next } : item
+                                ));
+                                lm();
+                              } catch { sm('保存失败', true); }
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ p: 0.5 }}>
+                      <TextField
+                        size="small"
+                        type="number"
+                        defaultValue={m.coefficient ?? 1.0}
+                        onBlur={async (e) => {
+                          const val = Number(e.target.value) || 1.0;
+                          if (val !== (m.coefficient ?? 1.0)) {
+                            try {
+                              await updateMethod(m.id, { ...m, coefficient: val });
+                              sm('已保存');
+                              // 立即更新 methodOverviewData，确保 UI 实时刷新
+                              setMethodOverviewData(prev => prev.map(item =>
+                                item.id === m.id ? { ...item, coefficient: val } : item
+                              ));
+                              lm();
+                            } catch { sm('保存失败', true); }
+                          }
+                        }}
+                        sx={{ width: 70, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                        inputProps={{ min: 0, step: 0.1 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ p: 0.5 }}>
+                      <TextField
+                        size="small"
+                        type="number"
+                        defaultValue={m.amount ?? 0}
+                        onBlur={async (e) => {
+                          const val = Number(e.target.value) || 0;
+                          if (val !== (m.amount ?? 0)) {
+                            try {
+                              await updateMethod(m.id, { ...m, amount: val });
+                              sm('已保存');
+                              // 立即更新 methodOverviewData，确保 UI 实时刷新
+                              setMethodOverviewData(prev => prev.map(item =>
+                                item.id === m.id ? { ...item, amount: val } : item
+                              ));
+                              lm();
+                            } catch { sm('保存失败', true); }
+                          }
+                        }}
+                        sx={{ width: 90, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                        inputProps={{ min: 0, step: 0.01 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={instrument || '无'}
+                        size="small"
+                        sx={{
+                          borderRadius: R,
+                          fontSize: '0.7rem',
+                          bgcolor: instrument ? '#9c27b0' : 'default',
+                          color: instrument ? '#fff' : 'inherit',
+                        }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </DialogContent>
-      <DialogActions><Button onClick={() => setMd(false)} sx={{ borderRadius: R }}>取消</Button><Button onClick={hms} variant="contained" sx={{ borderRadius: R }}>保存</Button></DialogActions>
+      <DialogActions>
+        <Button onClick={() => { setMethodOverviewOpen(false); }} sx={{ borderRadius: R }}>关闭</Button>
+      </DialogActions>
+    </Dialog>
+
+    {/* v0.3.23: 项目一览弹窗 */}
+    <Dialog open={projectOverviewOpen} onClose={() => setProjectOverviewOpen(false)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>项目一览</DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          共 {projectOverviewData.length} 个项目，直接在单元格内编辑，失焦自动保存
+        </Typography>
+        <TableContainer component={Paper} sx={{ borderRadius: R, border: '1px solid rgba(0,0,0,0.06)' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>项目名称</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>全名</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>排序</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>状态</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {projectOverviewData.map(p => (
+                <TableRow key={p.id} hover>
+                  <TableCell sx={{ p: 0.5 }}>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      defaultValue={p.name}
+                      onBlur={async (e) => {
+                        const val = e.target.value;
+                        if (val !== p.name) {
+                          try {
+                            await updateProject(p.id, { ...p, name: val });
+                            sm('已保存');
+                            setProjectOverviewData(prev => prev.map(item =>
+                              item.id === p.id ? { ...item, name: val } : item
+                            ));
+                            lp();
+                          } catch { sm('保存失败', true); }
+                        }
+                      }}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ p: 0.5 }}>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      defaultValue={p.full_name || ''}
+                      onBlur={async (e) => {
+                        const val = e.target.value;
+                        if (val !== (p.full_name || '')) {
+                          try {
+                            await updateProject(p.id, { ...p, full_name: val });
+                            sm('已保存');
+                            setProjectOverviewData(prev => prev.map(item =>
+                              item.id === p.id ? { ...item, full_name: val } : item
+                            ));
+                            lp();
+                          } catch { sm('保存失败', true); }
+                        }
+                      }}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ p: 0.5 }}>
+                    <TextField
+                      size="small"
+                      type="number"
+                      defaultValue={p.sort_order || 0}
+                      onBlur={async (e) => {
+                        const val = Number(e.target.value) || 0;
+                        if (val !== (p.sort_order || 0)) {
+                          try {
+                            await updateProject(p.id, { ...p, sort_order: val });
+                            sm('已保存');
+                            setProjectOverviewData(prev => prev.map(item =>
+                              item.id === p.id ? { ...item, sort_order: val } : item
+                            ));
+                            lp();
+                          } catch { sm('保存失败', true); }
+                        }
+                      }}
+                      sx={{ width: 70, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={p.is_active ? '激活' : '停用'}
+                      size="small"
+                      color={p.is_active ? 'success' : 'default'}
+                      sx={{ borderRadius: R, fontSize: '0.7rem' }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => { setProjectOverviewOpen(false); }} sx={{ borderRadius: R }}>关闭</Button>
+      </DialogActions>
+    </Dialog>
+
+    {/* v0.3.23: 实验室一览弹窗 */}
+    <Dialog open={groupOverviewOpen} onClose={() => setGroupOverviewOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>实验室一览</DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          共 {groupOverviewData.length} 个实验室，直接在单元格内编辑，失焦自动保存
+        </Typography>
+        <TableContainer component={Paper} sx={{ borderRadius: R, border: '1px solid rgba(0,0,0,0.06)' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>实验室名称</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>排序</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {groupOverviewData.map(g => (
+                <TableRow key={g.id} hover>
+                  <TableCell sx={{ p: 0.5 }}>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      defaultValue={g.name}
+                      onBlur={async (e) => {
+                        const val = e.target.value;
+                        if (val !== g.name) {
+                          try {
+                            await updateGroup(g.id, { ...g, name: val });
+                            sm('已保存');
+                            setGroupOverviewData(prev => prev.map(item =>
+                              item.id === g.id ? { ...item, name: val } : item
+                            ));
+                            lg();
+                          } catch { sm('保存失败', true); }
+                        }
+                      }}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ p: 0.5 }}>
+                    <TextField
+                      size="small"
+                      type="number"
+                      defaultValue={g.sort_order || 0}
+                      onBlur={async (e) => {
+                        const val = Number(e.target.value) || 0;
+                        if (val !== (g.sort_order || 0)) {
+                          try {
+                            await updateGroup(g.id, { ...g, sort_order: val });
+                            sm('已保存');
+                            setGroupOverviewData(prev => prev.map(item =>
+                              item.id === g.id ? { ...item, sort_order: val } : item
+                            ));
+                            lg();
+                          } catch { sm('保存失败', true); }
+                        }
+                      }}
+                      sx={{ width: 70, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => { setGroupOverviewOpen(false); }} sx={{ borderRadius: R }}>关闭</Button>
+      </DialogActions>
     </Dialog>
 
     {/* 方法类型对话框 */}
-    <Dialog open={mtd} onClose={() => setMtd(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
+    <Dialog open={mtd} onClose={() => setMtd(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
       <DialogTitle sx={{ fontWeight: 700 }}>{mtf.id > 0 ? '编辑类型' : '新增类型'}</DialogTitle>
       <DialogContent>
+        {mts.length > 0 && <TableContainer component={Paper} sx={{ mb: 2, borderRadius: R, border: '1px solid rgba(0,0,0,0.06)' }}>
+          <Table size="small">
+            <TableHead><TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>名称</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>排序</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="right">操作</TableCell>
+            </TableRow></TableHead>
+            <TableBody>
+              {mts.map(t => <TableRow key={t.id} hover>
+                <TableCell>{t.name}</TableCell>
+                <TableCell>{t.sort_order}</TableCell>
+                <TableCell align="right">
+                  <IconButton size="small" onClick={() => setMtf({ id: t.id, name: t.name, sort_order: t.sort_order || 10 })} sx={{ color: '#f4511e' }}><EditIcon fontSize="small" /></IconButton>
+                  <IconButton size="small" color="error" onClick={() => { setCa(() => async () => { const r = await deleteMethodType(t.id); if (r.code === 0) { sm('删除成功'); lmt(); } else sm(r.message, true); setCo(false); }); setCo(true); }}><DeleteIcon fontSize="small" /></IconButton>
+                </TableCell>
+              </TableRow>)}
+            </TableBody>
+          </Table>
+        </TableContainer>}
         <TextField label="类型名称" fullWidth value={mtf.name} onChange={e => setMtf({ ...mtf, name: e.target.value })} sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: R } }} helperText="如: 液相、气相、理化、检测类型等" />
         <TextField label="排序" type="number" fullWidth value={mtf.sort_order} onChange={e => setMtf({ ...mtf, sort_order: Number(e.target.value) || 10 })} sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: R } }} />
       </DialogContent>
@@ -324,6 +1060,62 @@ const ManagePage: React.FC = () => {
     </Dialog>
 
     <ConfirmDialog open={co} title="确认操作" message="确定要执行此操作吗？" confirmText="确定" cancelText="取消" onConfirm={ca} onCancel={() => setCo(false)} />
+
+    {/* v0.3.0: 导入映射预览对话框 */}
+    <Dialog open={importMappingOpen} onClose={() => setImportMappingOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: R } }}>
+      <DialogTitle sx={{ fontWeight: 700 }}>列头映射预览</DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          下表展示当前列头匹配规则。导入 Excel 时将按此规则对每列进行分类。
+        </Typography>
+        <TableContainer component={Paper} sx={{ borderRadius: R, border: '1px solid rgba(0,0,0,0.06)' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600 }}>匹配模式</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>目标表</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>默认类型</TableCell>
+                <TableCell sx={{ fontWeight: 600 }} align="right">优先级</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {importMappings.map(m => (
+                <TableRow key={m.id} hover>
+                  <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{m.header_pattern}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={m.target_table === 'project_groups' ? '实验室' : m.target_table === 'projects' ? '研发项目' : '检测方法'}
+                      size="small"
+                      color={m.target_table === 'project_groups' ? 'primary' : m.target_table === 'projects' ? 'success' : 'default'}
+                      variant="outlined"
+                      sx={{ borderRadius: R }}
+                    />
+                  </TableCell>
+                  <TableCell>{m.default_type || '—'}</TableCell>
+                  <TableCell align="right">{m.priority}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+          通配符 * 匹配任意字符。优先级数值越小越优先匹配。
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setImportMappingOpen(false)} sx={{ borderRadius: R }}>取消</Button>
+        <Button variant="contained" component="label" startIcon={<CloudUploadIcon />}
+          sx={{ borderRadius: R, background: 'linear-gradient(135deg,#00897b,#43a047)' }}>
+          选择文件导入
+          <input type="file" accept=".xlsx" hidden onChange={async (e) => {
+            const f = e.target.files?.[0]; if (!f) return;
+            setImportMappingOpen(false);
+            try { const r = await methodImport(f); sm(`导入成功: ${r.data?.total_methods || 0}条方法, ${r.data?.total_groups || 0}个分组`); lm(); lg(); lp(); }
+            catch { sm('导入失败', true); } e.target.value = '';
+          }} />
+        </Button>
+      </DialogActions>
+    </Dialog>
   </Box>);
 };
 

@@ -1,0 +1,57 @@
+sequenceDiagram
+    participant User as 用户
+    participant FE as ManagePage (前端)
+    participant Handler as method_handler
+    participant Repo as method_repo
+    participant DB as SQLite
+
+    User->>FE: 选择 Excel 文件上传
+    FE->>Handler: POST /api/methods/import (multipart/form-data)
+
+    Note over Handler: 阶段1: 解析 Excel
+    Handler->>Handler: calamine 读取工作表
+    Handler->>Handler: 提取 headers 行
+
+    Note over Handler: 阶段2: 预扫描"方法"列 (NEW v0.4.0)
+    Handler->>Handler: for each header:
+    Handler->>Handler:   if header.contains("方法"):
+    Handler->>Handler:     type_name = header.replace("方法","")
+    Handler->>Handler:     mark as priority method column
+
+    Note over Handler: 阶段3: 剩余列走 import_mappings
+    Handler->>DB: load_mappings_from_conn()
+    DB-->>Handler: Vec~ImportMapping~
+    Handler->>Handler: 非"方法"列 wildcard_match → 路由
+
+    Note over Handler: 阶段4: 收集数据
+    Handler->>Handler: 方法列 → method_items (含 type_name)
+    Handler->>Handler: 映射列 → project_items / group_items
+
+    Note over Handler: 阶段5: 批量写入
+    Handler->>Repo: batch_import_column_split(groups, projects, method_items, pairs)
+    
+    Repo->>DB: INSERT OR IGNORE INTO project_groups
+    Repo->>DB: INSERT INTO projects (去重)
+    Repo->>DB: INSERT OR IGNORE INTO project_lab_links
+
+    loop for each method_item
+        Repo->>DB: SELECT id FROM methods WHERE name=?1
+        alt 方法已存在 (P0-5 去重)
+            DB-->>Repo: existing id (skip insert)
+        else 方法不存在
+            Repo->>DB: INSERT INTO methods (name)
+        end
+        
+        alt type_name 非空 (P0-3 类型提取)
+            Repo->>DB: SELECT id FROM method_types WHERE name=?1
+            alt 类型不存在
+                Repo->>DB: INSERT INTO method_types (name) 【自动创建】
+                Note over Repo: types_created++
+            end
+            Repo->>DB: INSERT OR IGNORE INTO method_type_links
+        end
+    end
+
+    Repo-->>Handler: ImportSummary { types_created }
+    Handler-->>FE: ApiResponse<ImportSummary>
+    FE->>FE: 显示导入结果（含新建类型数）

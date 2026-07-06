@@ -1,0 +1,134 @@
+classDiagram
+    direction TB
+
+    class FlatRow {
+        <<type alias>>
+        (String, String, String, String, i64, bool, f64)
+        实验室, 项目代号, 仪器, 方法, 数量, 是否气相, 系数
+    }
+
+    class InstrumentDailyRow {
+        +String date
+        +String instrument
+        +String lab
+        +String project
+        +String method
+        +i64 quantity
+    }
+
+    class ProjectSummaryRow {
+        +String project
+        +String lab
+        +String instrument
+        +String method
+        +i64 quantity
+        +f64 amount
+    }
+
+    class LabSummaryRow {
+        +String lab
+        +String project
+        +String instrument
+        +String method
+        +i64 quantity
+        +f64 amount
+    }
+
+    class PersonRecordRow {
+        +String recorded_at
+        +String lab
+        +String project
+        +String method
+        +String method_type
+        +i64 quantity
+        +String user_name
+    }
+
+    class PersonSummaryRow {
+        +String user_name
+        +String method_type
+        +f64 coefficient
+        +i64 quantity
+    }
+
+    class LabTotalRow {
+        +String lab
+        +String project
+        +String method_type
+        +f64 amount
+        +i64 quantity
+    }
+
+    class ProjectTotalRow {
+        +String project
+        +String method_type
+        +f64 amount
+        +i64 quantity
+    }
+
+    class InstrumentSummaryRow {
+        +String instrument
+        +i64 quantity
+        +String instrument_type
+    }
+
+    class PhysChemRow {
+        +String method
+        +i64 quantity
+    }
+
+    class PreviewQuery {
+        +Option~String~ start
+        +Option~String~ end
+        +Option~i64~ group_id
+    }
+
+    class ExportPreviewHandler {
+        +router(pool) Router
+        +preview_sheet1() Json~ApiResponse~Vec~FlatRow~~~
+        +preview_sheet2() Json~ApiResponse~Vec~InstrumentDailyRow~~~
+        +preview_sheet3() Json~ApiResponse~Vec~ProjectSummaryRow~~~
+        +preview_sheet4() Json~ApiResponse~Vec~LabSummaryRow~~~
+        +preview_sheet5() Json~ApiResponse~Vec~PersonRecordRow~~~
+        +preview_sheet6() Json~ApiResponse~Vec~PersonSummaryRow~~~
+        +preview_sheet7() Json~ApiResponse~Vec~LabTotalRow~~~
+        +preview_sheet8() Json~ApiResponse~Vec~ProjectTotalRow~~~
+        +preview_sheet9() Json~ApiResponse~Vec~InstrumentSummaryRow~~~
+        +preview_sheet10() Json~ApiResponse~Vec~PhysChemRow~~~
+    }
+
+    ExportPreviewHandler ..> FlatRow : returns
+    ExportPreviewHandler ..> InstrumentDailyRow : returns
+    ExportPreviewHandler ..> ProjectSummaryRow : returns
+    ExportPreviewHandler ..> LabSummaryRow : returns
+    ExportPreviewHandler ..> PersonRecordRow : returns
+    ExportPreviewHandler ..> PersonSummaryRow : returns
+    ExportPreviewHandler ..> LabTotalRow : returns
+    ExportPreviewHandler ..> ProjectTotalRow : returns
+    ExportPreviewHandler ..> InstrumentSummaryRow : returns
+    ExportPreviewHandler ..> PhysChemRow : returns
+
+    class ExportDataQuery {
+        +query_sheet1_data(conn, start, end, group_id) Vec~FlatRow~
+        +query_sheet2_data(conn, start, end) Vec~InstrumentDailyRow~
+        +query_sheet3_data(conn, start, end) Vec~ProjectSummaryRow~
+        +query_sheet4_data(conn, start, end) Vec~LabSummaryRow~
+        +query_sheet5_data(conn, start, end) Vec~PersonRecordRow~
+        +query_sheet6_data(conn, start, end) Vec~PersonSummaryRow~
+        +query_sheet7_data(conn, start, end) Vec~LabTotalRow~
+        +query_sheet8_data(conn, start, end) Vec~ProjectTotalRow~
+        +query_sheet9_data(conn, start, end) Vec~InstrumentSummaryRow~
+        +query_sheet10_data(conn, start, end) Vec~PhysChemRow~
+    }
+
+    ExportPreviewHandler ..> ExportDataQuery : calls
+    ExportDataQuery ..> FlatRow : produces
+    ExportDataQuery ..> InstrumentDailyRow : produces
+    ExportDataQuery ..> ProjectSummaryRow : produces
+    ExportDataQuery ..> LabSummaryRow : produces
+    ExportDataQuery ..> PersonRecordRow : produces
+    ExportDataQuery ..> PersonSummaryRow : produces
+    ExportDataQuery ..> LabTotalRow : produces
+    ExportDataQuery ..> ProjectTotalRow : produces
+    ExportDataQuery ..> InstrumentSummaryRow : produces
+    ExportDataQuery ..> PhysChemRow : produces
