@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   workload-tool:
-    image: ghcr.io/hotll233/workload-tool:v0.4.25
+    image: ghcr.io/hotll233/workload-tool:latest
     container_name: workload-tool
     ports:
       - "8000:8000"
