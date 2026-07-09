@@ -1,0 +1,50 @@
+sequenceDiagram
+    actor User
+    participant FE as Frontend (HelpPage)
+    participant API as Axum Server
+    participant HH as help_handler::upload
+    participant PR as pdf_render::pdf_to_pngs
+    participant FS as FileSystem
+    participant DB as SQLite
+    participant PDFJS as PDF.js (Browser)
+
+    User->>FE: 选择 PDF 文件上传
+    FE->>API: POST /api/help-documents (multipart)
+    API->>HH: upload(mp)
+
+    HH->>FS: 保存原始 PDF 文件
+    HH->>DB: INSERT help_documents → 获取 doc.id
+
+    alt Windows 平台
+        HH->>PR: pdf_to_pngs(pdf_path, pages_dir)
+        PR->>PR: WinRT StorageFile::GetFileFromPathAsync
+        PR->>PR: PdfDocument::LoadFromStreamAsync
+        loop 每一页
+            PR->>PR: page.RenderToStreamAsync → BMP
+            PR->>PR: SoftwareBitmap::Convert → RGBA
+            PR->>PR: BitmapEncoder → PNG 写入磁盘
+        end
+        PR-->>HH: Ok(page_count)
+        HH->>DB: UPDATE page_count = n
+    else Linux 平台
+        HH->>PR: pdf_to_pngs(pdf_path, pages_dir)
+        PR-->>HH: Err("unsupported on this platform")
+        Note over HH: page_count 保持 NULL / 0
+    end
+
+    HH-->>FE: { doc_id, page_count: n|0 }
+
+    alt page_count > 0 (Windows)
+        FE->>API: GET /api/help-documents/:id/pages/:page
+        API-->>FE: PNG 图片
+        FE->>FE: 显示逐页 PNG
+    else page_count == 0 (Linux)
+        FE->>API: GET /api/help-documents/:id/file?raw=1
+        API-->>FE: { data: base64_pdf, filename }
+        FE->>PDFJS: pdfjsLib.getDocument(base64)
+        PDFJS-->>FE: PDF 文档对象
+        loop 每一页
+            FE->>PDFJS: page.render(canvas)
+        end
+        FE->>FE: Canvas 显示 PDF 页面
+    end

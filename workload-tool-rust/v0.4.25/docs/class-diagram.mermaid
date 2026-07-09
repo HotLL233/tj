@@ -1,0 +1,67 @@
+classDiagram
+    class AppConfig {
+        +u16 server_port
+        +String db_dir
+        +String log_level
+        +Option~String~ log_file
+        +String admin_user
+        +String admin_pass
+        +bool backup_enabled
+        +u64 backup_interval_hours
+        +u64 max_backup_count
+        +load() AppConfig
+        +save()
+        +db_path() PathBuf
+        +backup_dir() PathBuf
+        +data_dir()$ PathBuf
+    }
+
+    class HealthResponse {
+        +String status
+        +String version
+    }
+
+    class PdfRenderWindows {
+        <<module cfg(windows)>>
+        +pdf_to_pngs(Path, Path) Result~u32, String~
+    }
+
+    class PdfRenderLinux {
+        <<module cfg(not(windows))>>
+        +pdf_to_pngs(Path, Path) Result~u32, String~
+    }
+
+    class HelpHandler {
+        +router(DbPool) Router
+        -upload(State, Multipart) Result
+        -list(State, Query) Result
+        -update(State, Path, Json) Result
+        -delete(State, Path) Result
+        -get_file(State, Path, Query) Result
+        -get_page(State, Path) Result
+    }
+
+    class TrayModule {
+        <<cfg(windows) only>>
+        +run_tray(u16)
+    }
+
+    class PortUtil {
+        <<cross-platform>>
+        +is_port_in_use(u16) bool
+    }
+
+    class ApiRouter {
+        +api_router(DbPool, Arc~AppConfig~) Router
+        +health()$ Json~HealthResponse~
+    }
+
+    HelpHandler ..> PdfRenderWindows : "cfg(windows)"
+    HelpHandler ..> PdfRenderLinux : "cfg(not(windows))"
+    ApiRouter --> HelpHandler : "merge router"
+    ApiRouter --> AppConfig : "config"
+    
+    note for PdfRenderLinux "返回 Err(\"unsupported on this platform\")"
+    note for TrayModule "仅 Windows 编译\nLinux/Docker 走 console 模式"
+    note for PortUtil "从 tray.rs 提取\nTcpListener::bind 检测"
+    note for HealthResponse "GET /api/health\n新增 Docker 健康检查"
