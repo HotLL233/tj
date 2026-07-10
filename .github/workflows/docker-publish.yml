@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: hotll233/workload-tool
+  IMAGE_NAME: hotll233/tj/workload-tool
 
 jobs:
   build-and-push:
@@ -43,7 +43,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: workload-tool-rust/${{ github.ref_name }}
-          dockerfile: workload-tool-rust/${{ github.ref_name }}/Dockerfile
+          file: workload-tool-rust/${{ github.ref_name }}/Dockerfile
           push: true
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
