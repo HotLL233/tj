@@ -1,6 +1,7 @@
 services:
   workload-tool:
     image: ghcr.io/hotll233/workload-tool:latest
+    pull_policy: always
     container_name: workload-tool
     ports:
       - "8000:8000"
