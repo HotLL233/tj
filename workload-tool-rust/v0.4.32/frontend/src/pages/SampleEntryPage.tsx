@@ -1,0 +1,559 @@
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import {
+  Box, Typography, TextField, CircularProgress, Snackbar, Alert, Chip,
+  Button, Checkbox, Autocomplete, useMediaQuery, useTheme,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SendIcon from '@mui/icons-material/Send';
+import { useParams, useNavigate } from 'react-router-dom';
+import type { Project, Method, MethodType, WorkRecord, ProjectGroup, Division } from '../types';
+import { getProjects, getMethods, createRdRecord, getMethodTypes, getGroups, getRdRecords, sampleRdRecord, getDivisions } from '../api/client';
+import { useUser } from '../UserContext';
+
+const R = '2px';
+
+interface RowState {
+  id: number; // local row id
+  checked: boolean;
+  user_name: string;
+  project_id: number | null;
+  project_name: string;
+  division_id: number | null;
+  method_id: number | null;
+  method_name: string;
+  method_type: string;  // v0.4.28: 改为可编辑，级联过滤
+  quantity: number;
+  batch_no: string;
+  notes: string;
+}
+
+let rowIdCounter = 1;
+
+const createEmptyRow = (defaultUser: string, defaultDivisionId: number | null | undefined): RowState => ({
+  id: rowIdCounter++,
+  checked: false,
+  user_name: defaultUser,
+  project_id: null,
+  project_name: '',
+  division_id: defaultDivisionId ?? null,
+  method_id: null,
+  method_name: '',
+  method_type: '',
+  quantity: 1,
+  batch_no: '',
+  notes: '',
+});
+
+const SampleEntryPage: React.FC = () => {
+  const { groupId } = useParams<{ groupId: string }>();
+  const gid = Number(groupId) || 0;
+  const navigate = useNavigate();
+  const { user } = useUser();
+
+  const [groups, setGroups] = useState<ProjectGroup[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [allMethods, setAllMethods] = useState<Method[]>([]);
+  const [mts, setMts] = useState<MethodType[]>([]);
+  const [divs, setDivs] = useState<Division[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [dateTime, setDateTime] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d}T${hh}:${mm}`;
+  });
+
+  const [rows, setRows] = useState<RowState[]>([]);
+  const [snackMsg, setSnackMsg] = useState('');
+  const [snackErr, setSnackErr] = useState(false);
+
+  // 今日记录
+  const [todayRecords, setTodayRecords] = useState<WorkRecord[]>([]);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [recordsPage, setRecordsPage] = useState(0);
+  const [recordsTotal, setRecordsTotal] = useState(0);
+  const pageSize = 20;
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const labName = groups.find(g => g.id === gid)?.name || '';
+  const labDivisionId = groups.find(g => g.id === gid)?.division_id;
+  const dt = 'rd';
+
+  // v0.4.27-A: auto-fill user info
+  useEffect(() => {
+    const defaultUser = user?.username || '';
+    const defaultDiv = user?.division_id ?? labDivisionId ?? null;
+    setRows([createEmptyRow(defaultUser, defaultDiv)]);
+  }, [user, labDivisionId]);
+
+  const getTodayStr = useCallback(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, []);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [gr, pr, mr, mtr, dr] = await Promise.all([
+        getGroups(), getProjects({ group_id: gid, active_only: true }),
+        getMethods(), getMethodTypes(), getDivisions(),
+      ]);
+      if (gr.code === 0 && gr.data) setGroups(gr.data);
+      if (pr.code === 0 && pr.data) setProjects(pr.data);
+      if (mr.code === 0 && mr.data) setAllMethods(mr.data);
+      if (mtr.code === 0 && mtr.data) setMts(mtr.data);
+      if (dr.code === 0 && dr.data) setDivs(dr.data);
+    } catch {} finally { setLoading(false); }
+  }, [gid]);
+
+  const loadTodayRecords = useCallback(async (page?: number) => {
+    if (!gid) return;
+    setRecordsLoading(true);
+    try {
+      const today = getTodayStr();
+      const r = await getRdRecords({ group_id: gid, start: today, end: today, page: (page ?? recordsPage) + 1, page_size: pageSize });
+      if (r.code === 0 && r.data) {
+        setTodayRecords(r.data.items);
+        setRecordsTotal(r.data.total);
+      }
+    } catch {} finally { setRecordsLoading(false); }
+  }, [gid, recordsPage, getTodayStr]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadTodayRecords(); }, [loadTodayRecords]);
+
+  // 该实验室的研发项目所关联的方法
+  const linkedMethods = useMemo(() => {
+    if (!projects.length || !allMethods.length) return [] as Method[];
+    const linkedIds = new Set<number>();
+    projects.forEach(p => (p.method_ids || []).forEach(id => linkedIds.add(id)));
+    return allMethods.filter(m => linkedIds.has(m.id));
+  }, [projects, allMethods]);
+
+  // v0.4.28: 级联过滤辅助函数
+  // 根据项目获取可用类型列表
+  const getAvailableTypes = (projectId: number | null): string[] => {
+    if (!projectId) return [];
+    const proj = projects.find(p => p.id === projectId);
+    if (!proj) return [];
+    const types = new Set<string>();
+    linkedMethods
+      .filter(m => (proj.method_ids || []).includes(m.id))
+      .forEach(m => (m.type_names || []).forEach(t => types.add(t)));
+    return Array.from(types);
+  };
+
+  // 根据项目和类型获取可用方法
+  const getAvailableMethods = (projectId: number | null, typeFilter: string): Method[] => {
+    if (!projectId) return [];
+    const proj = projects.find(p => p.id === projectId);
+    if (!proj) return [];
+    let methods = linkedMethods.filter(m => (proj.method_ids || []).includes(m.id));
+    if (typeFilter) {
+      methods = methods.filter(m => (m.type_names || []).includes(typeFilter));
+    }
+    return methods;
+  };
+
+  const refreshRecords = useCallback(() => {
+    setRecordsPage(0);
+    const today = getTodayStr();
+    setRecordsLoading(true);
+    getRdRecords({ group_id: gid, start: today, end: today, page: 1, page_size: pageSize })
+      .then(r => { if (r.code === 0 && r.data) { setTodayRecords(r.data.items); setRecordsTotal(r.data.total); } })
+      .catch(() => {})
+      .finally(() => setRecordsLoading(false));
+  }, [gid, getTodayStr]);
+
+  const addRow = () => {
+    const defaultUser = user?.username || '';
+    const defaultDiv = user?.division_id ?? labDivisionId ?? null;
+    setRows(prev => [...prev, createEmptyRow(defaultUser, defaultDiv)]);
+  };
+
+  const deleteChecked = () => {
+    setRows(prev => prev.filter(r => !r.checked));
+  };
+
+  const reset = () => {
+    const defaultUser = user?.username || '';
+    const defaultDiv = user?.division_id ?? labDivisionId ?? null;
+    setRows([createEmptyRow(defaultUser, defaultDiv)]);
+  };
+
+  const toggleCheck = (rowId: number) => {
+    setRows(prev => prev.map(r => r.id === rowId ? { ...r, checked: !r.checked } : r));
+  };
+
+  const updateRow = (rowId: number, patch: Partial<RowState>) => {
+    setRows(prev => prev.map(r => r.id === rowId ? { ...r, ...patch } : r));
+  };
+
+  const handleSubmit = async () => {
+    // Validate
+    const invalidRows = rows.filter(r => !r.user_name.trim() || !r.project_id || r.quantity < 1);
+    if (invalidRows.length > 0) {
+      setSnackMsg('请填写完整信息：送样人、项目、数量（≥1）');
+      setSnackErr(true);
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+    for (const row of rows) {
+      try {
+        const body: any = {
+          project_id: row.project_id!,
+          method_id: row.method_id,
+          user_name: row.user_name,
+          quantity: row.quantity,
+          recorded_at: dateTime,
+          group_id: gid,
+          division_id: row.division_id ?? labDivisionId ?? null,
+          batch_no: row.batch_no || undefined,
+          notes: row.notes || undefined,
+        };
+        await createRdRecord(body);
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    if (failCount === 0) {
+      setSnackMsg(`成功提交 ${successCount} 条记录`);
+      setSnackErr(false);
+      reset();
+      refreshRecords();
+    } else {
+      setSnackMsg(`成功 ${successCount} 条，失败 ${failCount} 条`);
+      setSnackErr(true);
+    }
+  };
+
+  const handleRecordsPageChange = (_e: unknown, newPage: number) => {
+    setRecordsPage(newPage);
+    const today = getTodayStr();
+    setRecordsLoading(true);
+    getRdRecords({ group_id: gid, start: today, end: today, page: newPage + 1, page_size: pageSize })
+      .then(r => { if (r.code === 0 && r.data) { setTodayRecords(r.data.items); setRecordsTotal(r.data.total); } })
+      .catch(() => {})
+      .finally(() => setRecordsLoading(false));
+  };
+
+  // 取样
+  const handleSample = async (rec: WorkRecord, samplerName: string) => {
+    try {
+      await sampleRdRecord(rec.id, samplerName);
+      setSnackMsg('取样成功'); setSnackErr(false);
+      refreshRecords();
+    } catch { setSnackMsg('取样失败'); setSnackErr(true); }
+  };
+
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
+
+  return (<Box sx={{ p: 2 }}>
+    {/* === 卡片式白色容器，绿色边框 — 与样品信息登记一致 === */}
+    <Paper elevation={0} sx={{ p: 2, mb: 2, borderRadius: R, border: '2px solid #2e7d32', background: 'linear-gradient(145deg,#ffffff,#f1f8e9)' }}>
+
+      {/* 顶部标题栏 */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={700} sx={{ cursor: 'pointer' }} onClick={() => navigate('/sample')}>← 研发送样录入</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+            <Chip label={`实验室: ${labName}`} size="small" color="primary" variant="outlined" />
+            <Typography variant="body2" color="text.secondary">检测类型: {dt} · 序号: 自动生成</Typography>
+          </Box>
+        </Box>
+        <Chip label="待检测" size="small" sx={{ bgcolor: '#fff3e0', color: '#e65100', fontWeight: 500 }} />
+      </Box>
+
+      {/* 公共送样时间（整单公共） */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body2" sx={{ mb: 0.5 }}>送样时间（整单公共）</Typography>
+        <TextField
+          type="datetime-local"
+          size="small"
+          value={dateTime}
+          onChange={e => setDateTime(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={{ width: isMobile ? '100%' : 240, '& .MuiOutlinedInput-root': { borderRadius: R } }}
+        />
+      </Box>
+
+      {/* 操作按钮栏 */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+        <Button variant="outlined" size="small" startIcon={<AddIcon />} onClick={addRow} sx={{ borderRadius: R }}>
+          添加行
+        </Button>
+        <Button variant="outlined" size="small" startIcon={<DeleteIcon />} color="error" onClick={deleteChecked} sx={{ borderRadius: R }}
+          disabled={!rows.some(r => r.checked)}>
+          删除选中
+        </Button>
+        <Button variant="outlined" size="small" startIcon={<RefreshIcon />} onClick={reset} sx={{ borderRadius: R }}>
+          重置
+        </Button>
+      </Box>
+
+      {/* 多行表格 — v0.4.28: 级联选择 + 列宽优化 */}
+      {rows.length > 0 && (
+      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: R, boxShadow: 'none', mb: 2, overflowX: 'auto' }}>
+        <Table size="small" sx={{ minWidth: 1100 }} stickyHeader>
+          <TableHead>
+            <TableRow sx={{ bgcolor: 'rgba(230,81,0,0.06)' }}>
+              <TableCell padding="checkbox" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
+                <Checkbox size="small" checked={rows.length > 0 && rows.every(r => r.checked)}
+                  indeterminate={rows.some(r => r.checked) && !rows.every(r => r.checked)}
+                  onChange={() => {
+                    const allChecked = rows.every(r => r.checked);
+                    setRows(prev => prev.map(r => ({ ...r, checked: !allChecked })));
+                  }} />
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap', width: 40, textAlign: 'center' }}>序号</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>送样人</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>部门</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>实验室</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap', width: 120 }}>项目</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap', width: 100 }}>类型</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap', width: 140 }}>方法</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap', width: 80 }}>数量</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>批号</TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap', width: 120 }}>注意事项</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((row, idx) => {
+              const availableTypes = getAvailableTypes(row.project_id);
+              const availableMethods = getAvailableMethods(row.project_id, row.method_type);
+              return (
+              <TableRow key={row.id} hover sx={{ '&:last-child td': { borderBottom: 0 }, height: 48 }}>
+                <TableCell padding="checkbox">
+                  <Checkbox size="small" checked={row.checked} onChange={() => toggleCheck(row.id)} />
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.8rem', textAlign: 'center' }}>{idx + 1}</TableCell>
+                {/* 送样人(自填) */}
+                <TableCell sx={{ p: 0.5 }}>
+                  <TextField size="small" value={row.user_name} onChange={e => updateRow(row.id, { user_name: e.target.value })}
+                    sx={{ width: 80, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    inputProps={{ style: { padding: '2px 6px' } }} />
+                </TableCell>
+                {/* 部门(自填) */}
+                <TableCell sx={{ p: 0.5 }}>
+                  <TextField size="small" select value={row.division_id ?? ''}
+                    onChange={e => updateRow(row.id, { division_id: e.target.value ? Number(e.target.value) : null })}
+                    sx={{ width: 90, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    SelectProps={{ native: true }} inputProps={{ style: { padding: '2px 6px' } }}>
+                    <option value="">-</option>
+                    {divs.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </TextField>
+                </TableCell>
+                {/* 实验室(显示) */}
+                <TableCell sx={{ fontSize: '0.8rem', fontWeight: 500 }}>{labName || '-'}</TableCell>
+                {/* 项目(Select↓) — 级联起点 */}
+                <TableCell sx={{ p: 0.5 }}>
+                  <TextField size="small" select value={row.project_id ?? ''}
+                    onChange={e => {
+                      const pid = e.target.value ? Number(e.target.value) : null;
+                      const proj = projects.find(p => p.id === pid);
+                      updateRow(row.id, {
+                        project_id: pid,
+                        project_name: proj?.name || '',
+                        method_type: '',  // 切换项目时重置类型和方法
+                        method_id: null,
+                        method_name: '',
+                      });
+                    }}
+                    sx={{ width: 120, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    SelectProps={{ native: true }} inputProps={{ style: { padding: '2px 6px' } }}>
+                    <option value="">-</option>
+                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </TextField>
+                </TableCell>
+                {/* 类型(Select↓) — 级联过滤 */}
+                <TableCell sx={{ p: 0.5 }}>
+                  <TextField size="small" select value={row.method_type}
+                    onChange={e => {
+                      const mt = e.target.value;
+                      updateRow(row.id, {
+                        method_type: mt,
+                        method_id: null,  // 切换类型时重置方法
+                        method_name: '',
+                      });
+                    }}
+                    sx={{ width: 100, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    SelectProps={{ native: true }} inputProps={{ style: { padding: '2px 6px' } }}
+                    disabled={!row.project_id}>
+                    <option value="">-</option>
+                    {availableTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                  </TextField>
+                </TableCell>
+                {/* 方法(Select↓) — 级联过滤 */}
+                <TableCell sx={{ p: 0.5 }}>
+                  <TextField size="small" select value={row.method_id ?? ''}
+                    onChange={e => {
+                      const mid = e.target.value ? Number(e.target.value) : null;
+                      const meth = availableMethods.find(m => m.id === mid);
+                      updateRow(row.id, {
+                        method_id: mid,
+                        method_name: meth?.name || '',
+                      });
+                    }}
+                    sx={{ width: 140, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    SelectProps={{ native: true }} inputProps={{ style: { padding: '2px 6px' } }}
+                    disabled={!row.project_id}>
+                    <option value="">-</option>
+                    {availableMethods.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </TextField>
+                </TableCell>
+                {/* 数量 */}
+                <TableCell sx={{ p: 0.5 }}>
+                  <TextField type="number" size="small" value={row.quantity}
+                    onChange={e => updateRow(row.id, { quantity: Math.max(1, Number(e.target.value) || 1) })}
+                    sx={{ width: 65, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    inputProps={{ min: 1, style: { padding: '2px 6px', textAlign: 'center' } }} />
+                </TableCell>
+                {/* 批号 */}
+                <TableCell sx={{ p: 0.5 }}>
+                  <TextField size="small" value={row.batch_no} onChange={e => updateRow(row.id, { batch_no: e.target.value })}
+                    sx={{ width: 80, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    inputProps={{ style: { padding: '2px 6px' } }} />
+                </TableCell>
+                {/* 注意事项 */}
+                <TableCell sx={{ p: 0.5 }}>
+                  <TextField size="small" value={row.notes} onChange={e => updateRow(row.id, { notes: e.target.value })}
+                    sx={{ minWidth: 100, '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.8rem' } }}
+                    inputProps={{ style: { padding: '2px 6px' } }} />
+                </TableCell>
+              </TableRow>
+            );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      )}
+
+      {/* 底栏：提交按钮 */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+        <Button variant="contained" size="small" startIcon={<SendIcon />} onClick={handleSubmit}
+          sx={{ borderRadius: R, bgcolor: '#2e7d32', '&:hover': { bgcolor: '#1b5e20' } }}
+          disabled={rows.length === 0}>
+          提交登记（{rows.length} 行）
+        </Button>
+      </Box>
+    </Paper>
+
+    {/* 今日记录 */}
+    <Box sx={{ mt: 3 }}>
+      <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5 }}>
+        今日记录
+        {recordsTotal > 0 && <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>（共 {recordsTotal} 条）</Typography>}
+      </Typography>
+      {recordsLoading && todayRecords.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={28} /></Box>
+      ) : todayRecords.length === 0 ? (
+        <Typography color="text.secondary" textAlign="center" sx={{ py: 3, fontSize: '0.875rem' }}>今天暂无录入记录</Typography>
+      ) : (
+        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: R, boxShadow: 'none' }}>
+          <Table size="small" sx={{ minWidth: 960 }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'rgba(230,81,0,0.06)' }}>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap', width: 40, textAlign: 'center' }}>序号</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>状态</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>送样时间</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>实验室</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>研发项目</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>送样人</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>方法</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>类型</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>数量</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>批号</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>取样人</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>取样时间</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {todayRecords.map((rec, idx) => {
+                const status = rec.status || '待取样';
+                const isSampled = status === '已取样';
+                return (
+                  <TableRow key={rec.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                    <TableCell sx={{ fontSize: '0.8rem', textAlign: 'center' }}>{recordsPage * pageSize + idx + 1}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      <Typography variant="body2" sx={{
+                        display: 'inline-block', px: 1, py: 0.3, borderRadius: R, fontSize: '0.75rem', fontWeight: 600,
+                        bgcolor: isSampled ? '#c8e6c9' : '#fff9c4',
+                        color: isSampled ? '#2e7d32' : '#f57f17',
+                      }}>{status}</Typography>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      {rec.recorded_at ? rec.recorded_at.replace('T', ' ').substring(0, 19) : '-'}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labName || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rec.project_name || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{rec.user_name || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rec.method_name || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{rec.method_type || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{rec.quantity}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{rec.batch_no || '-'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      {isSampled ? (
+                        <Typography variant="body2" sx={{ color: '#2e7d32', fontWeight: 600 }}>{rec.sampler || '-'}</Typography>
+                      ) : (
+                        <TextField size="small" placeholder="取样人"
+                          onBlur={async (e) => {
+                            const val = e.target.value.trim();
+                            if (val) { await handleSample(rec, val); }
+                          }}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                              const val = (e.target as HTMLInputElement).value.trim();
+                              if (val) { await handleSample(rec, val); }
+                            }
+                          }}
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: R, fontSize: '0.75rem' }, width: 80 }}
+                          inputProps={{ style: { padding: '2px 8px' } }} />
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      {rec.sampled_at ? rec.sampled_at.replace('T', ' ').substring(0, 19) : '-'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          {recordsTotal > pageSize && (
+            <TablePagination
+              component="div"
+              count={recordsTotal}
+              page={recordsPage}
+              onPageChange={handleRecordsPageChange}
+              rowsPerPage={pageSize}
+              rowsPerPageOptions={[pageSize]}
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+              sx={{ '& .MuiTablePagination-toolbar': { minHeight: 40 }, '& .MuiTablePagination-selectLabel': { fontSize: '0.75rem' }, '& .MuiTablePagination-displayedRows': { fontSize: '0.75rem' } }}
+            />
+          )}
+        </TableContainer>
+      )}
+    </Box>
+
+    <Snackbar open={!!snackMsg} autoHideDuration={3000} onClose={() => setSnackMsg('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Alert severity={snackErr ? 'error' : 'success'} sx={{ borderRadius: R }} onClose={() => setSnackMsg('')}>{snackMsg}</Alert>
+    </Snackbar>
+  </Box>);
+};
+
+export default SampleEntryPage;
