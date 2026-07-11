@@ -7,7 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: hotll233/workload-tool
 
 jobs:
   build-and-push:
@@ -23,6 +22,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # 登录（GITHUB_TOKEN 必有）
       - name: Log in to ghcr.io
         uses: docker/login-action@v3
         with:
@@ -30,21 +30,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=tag
-            type=raw,value=latest,enable=true
-
-      - name: Build and push
+      # 推送到 ghcr.io/hotll233/tj/workload-tool（GITHUB_TOKEN 保证成功）
+      - name: Build and push (tj namespace)
         uses: docker/build-push-action@v5
         with:
           context: workload-tool-rust/${{ github.ref_name }}
           file: workload-tool-rust/${{ github.ref_name }}/Dockerfile
           push: true
           platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ghcr.io/hotll233/tj/workload-tool:${{ github.ref_name }}
+            ghcr.io/hotll233/tj/workload-tool:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # 额外推送到 ghcr.io/hotll233/workload-tool（需要 GHCR_PAT 才能成功）
+      # 允许失败 — 不影响主流程
+      - name: Build and push (user namespace, best-effort)
+        continue-on-error: true
+        uses: docker/build-push-action@v5
+        with:
+          context: workload-tool-rust/${{ github.ref_name }}
+          file: workload-tool-rust/${{ github.ref_name }}/Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ghcr.io/hotll233/workload-tool:${{ github.ref_name }}
+            ghcr.io/hotll233/workload-tool:latest
           labels: ${{ steps.meta.outputs.labels }}
