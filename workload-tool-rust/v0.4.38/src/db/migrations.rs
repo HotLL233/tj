@@ -711,6 +711,7 @@ fn seed_default_settings(conn: &rusqlite::Connection) -> Result<()> {
         ("layout_stats", r##"{"sections":{"page-title":{"visible":true,"label":"分析检测统计"},"stat-cards":{"visible":true},"charts":{"visible":true}}}"##),
         ("layout_sample_stats", r##"{"sections":{"page-title":{"visible":true,"label":"研发送样统计"},"stat-cards":{"visible":true},"charts":{"visible":true}}}"##),
         ("layout_entry", r##"{"sections":{"page-title":{"visible":true,"label":"检测录入"},"form-fields":{"visible":true},"submit-btn":{"visible":true,"label":"提交"}}}"##),
+        ("layout_manage", r##"{"sections":{"page-title":{"visible":true,"label":"系统管理"},"manage-cards":{"visible":true}}}"##),
     ];
 
     for (key, value) in settings {

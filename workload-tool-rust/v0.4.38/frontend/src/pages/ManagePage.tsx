@@ -13,6 +13,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import FolderIcon from '@mui/icons-material/Folder';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import ScienceIcon from '@mui/icons-material/Science';
+import { PageEditProvider, PageEditToggle, PageSectionEditor } from '../components/PageSectionEditor';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import HistoryIcon from '@mui/icons-material/History';
@@ -574,12 +575,21 @@ const ManagePage: React.FC = () => {
 
   if (ld) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
 
-  return (<Box>
-    <Typography variant="h5" fontWeight={700} sx={{ mb: 3, px: 1, background: 'linear-gradient(135deg,#f4511e,#e53935)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>系统管理</Typography>
-    {msg && <Alert severity={err ? 'error' : 'success'} sx={{ mb: 2, borderRadius: R }} onClose={() => setMsg('')}>{msg}</Alert>}
+  return (
+    <PageEditProvider>
+    <Box>
+      <PageEditToggle />
 
-    {/* 卡片网格 */}
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr 1fr', sm: '1fr 1fr 1fr', md: '1fr 1fr 1fr' }, gap: 1.5, mb: 3 }}>
+      {/* 标题 */}
+      <PageSectionEditor pageKey="manage" sectionKey="page-title" defaultLabel="系统管理">
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 3, px: 1, background: 'linear-gradient(135deg,#f4511e,#e53935)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>系统管理</Typography>
+      </PageSectionEditor>
+
+      {msg && <Alert severity={err ? 'error' : 'success'} sx={{ mb: 2, borderRadius: R }} onClose={() => setMsg('')}>{msg}</Alert>}
+
+      {/* 管理卡片网格 */}
+      <PageSectionEditor pageKey="manage" sectionKey="manage-cards">
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr 1fr', sm: '1fr 1fr 1fr', md: '1fr 1fr 1fr' }, gap: 1.5, mb: 3 }}>
       {tc.filter(c => user?.is_admin || !c.perm || hasPermission(user?.permissions || [], c.perm)).map(c => (
         <Paper key={c.key} elevation={0}
           onClick={() => c.key === 'roles' ? navigate('/admin/roles') : setTb(c.key)}
@@ -592,6 +602,7 @@ const ManagePage: React.FC = () => {
         </Paper>
       ))}
     </Box>
+    </PageSectionEditor>
 
     {/* ── 1. 研发项目管理 (v0.2.17 简化) ── */}
     {tb === 'projects' && <Box>
@@ -2499,7 +2510,9 @@ const ManagePage: React.FC = () => {
         </Button>
       </DialogActions>
     </Dialog>
-  </Box>);
+  </Box>
+  </PageEditProvider>
+);
 };
 
 export default ManagePage;
