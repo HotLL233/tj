@@ -1,0 +1,62 @@
+%% Sequence 1: 列自定义 CRUD
+sequenceDiagram
+    participant Frontend
+    participant ColumnHandler as sample_info_column_handler
+    participant DB as SQLite
+
+    Note over Frontend,DB: 读取所有自定义列
+    Frontend->>ColumnHandler: GET /api/sample-info/columns
+    ColumnHandler->>DB: SELECT * FROM sample_info_columns WHERE is_active=1 ORDER BY sort_order
+    DB-->>ColumnHandler: Vec<SampleInfoColumn>
+    ColumnHandler-->>Frontend: ApiResponse<SampleInfoColumn[]>
+
+    Note over Frontend,DB: 创建自定义列
+    Frontend->>ColumnHandler: POST /api/sample-info/columns { column_key, display_name, column_type }
+    ColumnHandler->>DB: INSERT INTO sample_info_columns ...
+    DB-->>ColumnHandler: new row
+    ColumnHandler-->>Frontend: ApiResponse<SampleInfoColumn>
+
+    Note over Frontend,DB: 删除列
+    Frontend->>ColumnHandler: DELETE /api/sample-info/columns/:id
+    ColumnHandler->>DB: DELETE FROM sample_info_columns WHERE id=?
+    ColumnHandler-->>Frontend: ApiResponse<()>
+
+%% Sequence 2: 录入表单带自定义列
+sequenceDiagram
+    participant User
+    participant EntryUI as SampleInfoEntry.tsx
+    participant API as client.ts
+    participant Handler as sample_info_handler
+    participant Repo as sample_info_repo
+    participant DB2 as SQLite
+
+    Note over User,DB2: 录入表单提交带自定义列
+    User->>EntryUI: 填写批号 + 成分 + 自定义列值
+    EntryUI->>EntryUI: 构造 extra_fields JSON
+    EntryUI->>API: createSampleInfo({ ..., extra_fields: {...} })
+    API->>Handler: POST /api/sample-info
+    Handler->>Repo: create(pool, &SampleInfoCreate { extra_fields })
+    Repo->>DB2: INSERT INTO sample_info_records (..., extra_fields)
+    DB2-->>Repo: id
+    Repo-->>Handler: SampleInfoResponse { extra_fields }
+    Handler-->>API: ApiResponse
+    API-->>EntryUI: response
+    EntryUI-->>User: 提交成功
+
+%% Sequence 3: 导出 Excel 带自定义列
+sequenceDiagram
+    participant Exporter as sample_info_export_handler
+    participant ColRepo as (query columns)
+    participant Data as sample_info_export_data
+    participant Writer as sample_info_export_write
+    participant DB3 as SQLite
+
+    Note over Exporter,DB3: 导出 Excel 带自定义列
+    Exporter->>DB3: SELECT * FROM sample_info_columns WHERE is_active=1 ORDER BY sort_order
+    DB3-->>Exporter: Vec<SampleInfoColumn>
+    Exporter->>Data: query_detail(conn, start, end)
+    Data->>DB3: SELECT ..., extra_fields FROM sample_info_records
+    DB3-->>Data: Vec<SampleInfoExportRow>
+    Data-->>Exporter: rows
+    Exporter->>Writer: write_sheet_detail(ws, rows, cols, fmt)
+    Writer-->>Exporter: 完成
