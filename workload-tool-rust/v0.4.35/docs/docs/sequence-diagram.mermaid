@@ -1,0 +1,67 @@
+sequenceDiagram
+    actor Admin as 管理员
+    participant MP as ManagePage.tsx
+    participant Client as client.ts
+    participant Handler as help_handler.rs
+    participant Repo as help_repo.rs
+    participant FS as 文件系统
+    participant DB as SQLite
+
+    Note over Admin,DB: === 场景1: 上传帮助文档 ===
+
+    Admin->>MP: 选择文件 + 填写标题, 点击上传
+    MP->>Client: uploadHelpDocument(file, title)
+    Client->>Handler: POST /api/help-documents (multipart)
+    Handler->>Handler: 解析 multipart (title + file)
+    Handler->>Handler: 生成唯一文件名 (UUID + 原始扩展名)
+    Handler->>FS: 写入 data/help_docs/{uuid}.{ext}
+    FS-->>Handler: 写入成功
+    Handler->>Repo: create(pool, help_doc)
+    Repo->>DB: INSERT INTO help_documents (...)
+    DB-->>Repo: row id
+    Repo-->>Handler: HelpDocument
+    Handler-->>Client: ApiResponse~HelpDocument~
+    Client-->>MP: HelpDocument
+    MP->>MP: 刷新文档列表
+
+    Note over Admin,DB: === 场景2: 用户查看帮助页面 ===
+
+    actor User as 普通用户
+    participant HP as HelpPage.tsx
+
+    User->>HP: 导航到 /help
+    HP->>Client: getHelpDocuments()
+    Client->>Handler: GET /api/help-documents
+    Handler->>Repo: list(pool, visible_only=true)
+    Repo->>DB: SELECT * FROM help_documents<br/>WHERE is_visible=1 ORDER BY sort_order
+    DB-->>Repo: rows
+    Repo-->>Handler: Vec~HelpDocument~
+    Handler-->>Client: ApiResponse~HelpDocument[]~
+    Client-->>HP: HelpDocument[]
+    HP->>HP: 渲染 9宫格 Card
+
+    User->>HP: 点击某个文档
+    HP->>HP: window.open(getHelpDocumentFileUrl(id))
+    Note right of HP: 浏览器直接 GET<br/>/api/help-documents/:id/file<br/>下载/预览
+
+    Note over Admin,DB: === 场景3: SampleEntryPage 项目筛选联动 ===
+
+    actor Sampler as 送样人
+    participant SEP as SampleEntryPage.tsx
+
+    Sampler->>SEP: 进入 /sample/:groupId
+    SEP->>Client: getProjects({group_id, active_only:true})
+    Client-->>SEP: projects[]
+    SEP->>Client: getMethods()
+    Client-->>SEP: allMethods[]
+    SEP->>SEP: linkedMethods = allMethods ∩ projects.method_ids
+
+    Sampler->>SEP: 点击某个项目 Chip
+    SEP->>SEP: projectFilter = projectId
+    SEP->>SEP: projectMethods = linkedMethods.filter<br/>(m => project.method_ids.includes(m.id))
+    SEP->>SEP: 类型 Chip 计数基于 projectMethods 重新计算
+
+    Sampler->>SEP: 点击某个类型 Chip
+    SEP->>SEP: typeFilter = typeName
+    SEP->>SEP: filtered = projectMethods.filter<br/>(m => type_names.includes(typeFilter))
+    SEP->>SEP: 渲染 filtered 方法列表
