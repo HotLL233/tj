@@ -711,7 +711,7 @@ fn seed_default_settings(conn: &rusqlite::Connection) -> Result<()> {
         ("layout_stats", r##"{"sections":{"page-title":{"visible":true,"label":"分析检测统计"},"stat-cards":{"visible":true},"charts":{"visible":true}}}"##),
         ("layout_sample_stats", r##"{"sections":{"page-title":{"visible":true,"label":"研发送样统计"},"stat-cards":{"visible":true},"charts":{"visible":true}}}"##),
         ("layout_entry", r##"{"sections":{"page-title":{"visible":true,"label":"检测录入"},"form-fields":{"visible":true},"submit-btn":{"visible":true,"label":"提交"}}}"##),
-        ("layout_manage", r##"{"sections":{"page-title":{"visible":true,"label":"系统管理"},"manage-cards":{"visible":true}}}"##),
+        ("layout_manage", r##"{"sections":{"page-title":{"visible":true,"label":"系统管理"},"tab-content":{"visible":true},"card-projects":{"visible":true,"label":"研发项目管理"},"card-groups":{"visible":true,"label":"实验室管理"},"card-divisions":{"visible":true,"label":"部门管理"},"card-methods":{"visible":true,"label":"检测方法管理"},"card-trash":{"visible":true,"label":"回收站"},"card-audit":{"visible":true,"label":"审计日志"},"card-backup":{"visible":true,"label":"数据备份"},"card-help":{"visible":true,"label":"教程与帮助"},"card-sampleinfo":{"visible":true,"label":"样品信息登记管理"},"card-users":{"visible":true,"label":"用户管理"},"card-roles":{"visible":true,"label":"角色管理"},"card-theme":{"visible":true,"label":"主题设置"},"card-home":{"visible":true,"label":"首页配置"},"card-stats":{"visible":true,"label":"统计卡片"}}}"##),
     ];
 
     for (key, value) in settings {
