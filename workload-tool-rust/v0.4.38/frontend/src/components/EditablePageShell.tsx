@@ -65,12 +65,16 @@ const EditablePageShell: React.FC<EditablePageShellProps> = ({
         await updateSetting(settingKey, newFields);
         setFields(newFields);
         onFieldsLoaded?.(newFields);
-        setSnackMsg('布局已发布');
+        setSnackMsg('布局已发布，3秒后刷新页面...');
         setSnackErr(false);
         setEditMode(false);
-      } catch {
-        setSnackMsg('保存失败');
+        // 关键：保存后强制刷新页面，避免今日记录表格读不到最新 layout
+        setTimeout(() => { try { window.location.reload(); } catch {} }, 1500);
+      } catch (e: any) {
+        const msg = (e && e.response && e.response.data && e.response.data.message) || (e && e.message) || '保存失败';
+        setSnackMsg('保存失败: ' + msg);
         setSnackErr(true);
+        // 不自动关闭编辑模式，让用户看到错误
       }
     },
     [pageKey, onFieldsLoaded]
@@ -110,9 +114,9 @@ const EditablePageShell: React.FC<EditablePageShellProps> = ({
       {/* Snackbar */}
       <Snackbar
         open={!!snackMsg}
-        autoHideDuration={3000}
+        autoHideDuration={6000}
         onClose={() => setSnackMsg('')}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
           severity={snackErr ? 'error' : 'success'}

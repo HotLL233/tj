@@ -145,9 +145,6 @@ const ManagePage: React.FC = () => {
     { key: 'sampleinfo', label: '样品信息登记管理', perm: 'manage:sampleinfo', icon: <ScienceIcon />, desc: '检测类型 · 记录查询 · 独立统计' },
     { key: 'users', label: '用户管理', perm: 'manage:users', icon: <PeopleIcon />, desc: '注册/编辑用户、分配权限' },
     { key: 'roles', label: '角色管理', perm: 'manage:roles', icon: <VerifiedUserIcon />, desc: '角色分级与入口可见性' },
-    { key: 'theme', label: '主题设置', perm: 'manage:theme', icon: <ListAltIcon />, desc: '主题色/背景/圆角/品牌文字' },
-    { key: 'home', label: '首页配置', perm: 'manage:home', icon: <ListAltIcon />, desc: '首页入口卡片编辑' },
-    { key: 'stats', label: '统计卡片', perm: 'manage:stats', icon: <ListAltIcon />, desc: '统计页卡片编辑' },
   ];
   const [tc, setTc] = useState(defaultTC);
 
