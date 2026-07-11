@@ -60,21 +60,38 @@ const EditablePageShell: React.FC<EditablePageShellProps> = ({
 
   const handleSave = useCallback(
     async (newFields: FieldDef[]) => {
+      const settingKey = `layout_${pageKey}`;
       try {
-        const settingKey = `layout_${pageKey}`;
-        await updateSetting(settingKey, newFields);
+        // 用原生 fetch 代替 Axios，排除 Axios 拦截器/转换器的问题
+        const body = JSON.stringify({ value: newFields });
+        const res = await fetch(`/api/settings/${settingKey}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body,
+        });
+        if (!res.ok) {
+          const txt = await res.text().catch(() => '');
+          throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
+        }
+        const saved = await res.json();
+        if (saved.code !== 0) {
+          throw new Error(saved.message || '服务端返回错误');
+        }
+        // 更新本地状态
         setFields(newFields);
         onFieldsLoaded?.(newFields);
-        setSnackMsg('布局已发布，3秒后刷新页面...');
-        setSnackErr(false);
         setEditMode(false);
-        // 关键：保存后强制刷新页面，避免今日记录表格读不到最新 layout
-        setTimeout(() => { try { window.location.reload(); } catch {} }, 1500);
+        setSnackMsg('✅ 布局已保存，页面即将刷新');
+        setSnackErr(false);
+        // 稍后刷新使所有组件重新读取最新配置
+        setTimeout(() => { try { window.location.reload(); } catch {} }, 1800);
       } catch (e: any) {
-        const msg = (e && e.response && e.response.data && e.response.data.message) || (e && e.message) || '保存失败';
-        setSnackMsg('保存失败: ' + msg);
+        setEditMode(false); // 先关编辑器，让用户看到错误提示
+        const msg = e?.message || String(e) || '未知错误';
+        setSnackMsg('❌ 保存失败: ' + msg);
         setSnackErr(true);
-        // 不自动关闭编辑模式，让用户看到错误
+        console.error('[EditablePageShell] save error:', e);
       }
     },
     [pageKey, onFieldsLoaded]
@@ -114,9 +131,10 @@ const EditablePageShell: React.FC<EditablePageShellProps> = ({
       {/* Snackbar */}
       <Snackbar
         open={!!snackMsg}
-        autoHideDuration={6000}
+        autoHideDuration={8000}
         onClose={() => setSnackMsg('')}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ zIndex: 10001, mt: 6 }}
       >
         <Alert
           severity={snackErr ? 'error' : 'success'}
