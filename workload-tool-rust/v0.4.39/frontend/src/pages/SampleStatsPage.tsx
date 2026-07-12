@@ -461,19 +461,13 @@ const StatsPage: React.FC = () => {
   }, [ac, ld2]);
   const hx = async () => {
     try {
-      const b = await exportRdExcel({
+      await exportRdExcel({
         start: si,
         end: ei,
         group_id: gf || undefined,
       });
-      const u = URL.createObjectURL(b);
-      const a = document.createElement("a");
-      a.href = u;
-      a.download = `研发送样统计_${s}_${e}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(u);
-    } catch {
-      setEr("导出失败");
+    } catch (e: any) {
+      setEr(e?.message || '导出失败');
     }
   };
   const oed = (r: WorkRecord) => {

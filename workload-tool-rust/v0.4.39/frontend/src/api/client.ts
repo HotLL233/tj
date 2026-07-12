@@ -208,21 +208,32 @@ export const getStatsByDivision = (params?: { start?: string; end?: string; divi
   client.get('/stats/by-division', { params }).then((r) => r.data);
 
 // --- Export ---
-export const exportExcel = (params: { start?: string; end?: string; group_id?: number }): Promise<Blob> =>
-  client.get('/export/excel', { params, responseType: 'arraybuffer' })
-    .then((r) => {
-      if (r.status !== 200) {
-        try {
-          const text = new TextDecoder().decode(r.data);
-          const json = JSON.parse(text);
-          throw new Error(json.message || '导出失败');
-        } catch (e) {
-          if (e instanceof Error) throw e;
-          throw new Error('导出失败');
-        }
-      }
-      return new Blob([r.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    });
+async function downloadFile(url: string, params: Record<string, any>, filename: string): Promise<void> {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null) qs.set(k, String(v)); });
+  const token = localStorage.getItem('workload_token') || sessionStorage.getItem('workload_token') || '';
+  const res = await fetch(`${url}?${qs.toString()}`, {
+    credentials: 'include',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    let msg = `导出失败 (HTTP ${res.status})`;
+    try { const j = JSON.parse(txt); if (j.message) msg = j.message; } catch {}
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  if (blob.size === 0) throw new Error('导出文件为空');
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = u; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
+
+export const exportExcel = (params: { start?: string; end?: string; group_id?: number }): Promise<void> =>
+  downloadFile('/api/export/excel', params, `样品管理_${params.start?.substring(0, 10) ?? ''}_${params.end?.substring(0, 10) ?? ''}.xlsx`);
 
 // --- Audit ---
 export const getAuditLogs = (params?: { page?: number; page_size?: number }): Promise<ApiResponse<PaginatedResponse<AuditLog>>> =>
@@ -344,21 +355,8 @@ export const getRdStatsByInstrument = (params?: { start?: string; end?: string; 
   client.get('/rd-stats/by-instrument', { params }).then((r) => r.data);
 
 // --- RD Export ---
-export const exportRdExcel = (params: { start?: string; end?: string; group_id?: number }): Promise<Blob> =>
-  client.get('/rd-export/excel', { params, responseType: 'arraybuffer' })
-    .then((r) => {
-      if (r.status !== 200) {
-        try {
-          const text = new TextDecoder().decode(r.data);
-          const json = JSON.parse(text);
-          throw new Error(json.message || '导出失败');
-        } catch (e) {
-          if (e instanceof Error) throw e;
-          throw new Error('导出失败');
-        }
-      }
-      return new Blob([r.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    });
+export const exportRdExcel = (params: { start?: string; end?: string; group_id?: number }): Promise<void> =>
+  downloadFile('/api/rd-export/excel', params, `研发送样_${params.start?.substring(0, 10) ?? ''}_${params.end?.substring(0, 10) ?? ''}.xlsx`);
 
 // --- RD Export Preview ---
 export const getRdPreviewSheet1 = (params: { start: string; end: string; group_id?: number }): Promise<ApiResponse<Sheet1Data>> =>
@@ -462,21 +460,8 @@ export const deleteSampleInfoType = (id: number): Promise<ApiResponse<null>> =>
   client.delete(`/sample-info-types/${id}`).then(r => r.data);
 
 // ========== v0.4.23: 样品信息登记导出（独立接口） ==========
-export const exportSampleInfo = (params: { start?: string; end?: string }): Promise<Blob> =>
-  client.get('/sample-info/export', { params, responseType: 'arraybuffer' })
-    .then((r) => {
-      if (r.status !== 200) {
-        try {
-          const text = new TextDecoder().decode(r.data);
-          const json = JSON.parse(text);
-          throw new Error(json.message || '导出失败');
-        } catch (e) {
-          if (e instanceof Error) throw e;
-          throw new Error('导出失败');
-        }
-      }
-      return new Blob([r.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    });
+export const exportSampleInfo = (params: { start?: string; end?: string }): Promise<void> =>
+  downloadFile('/api/sample-info/export', params, `样品信息登记_${params.start?.substring(0, 10) ?? ''}_${params.end?.substring(0, 10) ?? ''}.xlsx`);
 
 // ========== v0.4.26: 列自定义 API ==========
 export const getSampleInfoColumns = (typeKey?: string): Promise<ApiResponse<SampleInfoColumn[]>> =>

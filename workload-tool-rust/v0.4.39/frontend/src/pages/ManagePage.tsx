@@ -364,12 +364,7 @@ const ManagePage: React.FC = () => {
   // 导出（独立接口）
   const doExportSi = async () => {
     try {
-      const blob = await exportSampleInfo({ start: siFilters.start || undefined, end: siFilters.end || undefined });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const fname = `样品信息登记_${siFilters.start || 'all'}_${siFilters.end || 'all'}.xlsx`;
-      a.href = url; a.download = fname; a.click();
-      window.URL.revokeObjectURL(url);
+      await exportSampleInfo({ start: siFilters.start || undefined, end: siFilters.end || undefined });
       sm('导出成功');
     } catch (e: any) { sm(e.message || '导出失败', true); }
   };

@@ -474,19 +474,11 @@ const StatsPage: React.FC = () => {
   }, [ac, ld2]);
   const hx = async () => {
     try {
-      const b = await exportExcel({
+      await exportExcel({
         start: si,
         end: ei,
         group_id: gf || undefined,
       });
-      const u = URL.createObjectURL(b);
-      const a = document.createElement("a");
-      a.href = u;
-      a.download = `样品管理_${s}_${e}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(u), 1000);
     } catch (e: any) {
       setEr(e?.message || '导出失败');
     }

@@ -134,11 +134,7 @@ const SampleInfoStatsPage: React.FC = () => {
 
   const doExport = async () => {
     try {
-      const blob = await exportSampleInfo({ start: si, end: ei });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url;
-      a.download = `样品信息登记_${s}_${e}.xlsx`; a.click();
-      URL.revokeObjectURL(url);
+      await exportSampleInfo({ start: si, end: ei });
     } catch (e: any) { setEr(e.message || "导出失败"); }
   };
 
