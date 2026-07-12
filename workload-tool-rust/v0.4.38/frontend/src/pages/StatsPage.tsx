@@ -2028,7 +2028,12 @@ const StatsPage: React.FC = () => {
           </Box>
         </Box>
       )}
-      {ac ? cct() : cg()}
+      {ac ? (
+        cct()
+      ) : (
+        // 卡片网格：放在 charts PageSectionEditor 外面，避免任何 wrap 拦截点击
+        <Box sx={{ mt: 2, position: 'relative', zIndex: 1 }}>{cg()}</Box>
+      )}
       <Dialog
         open={edo}
         onClose={() => setEdo(false)}
