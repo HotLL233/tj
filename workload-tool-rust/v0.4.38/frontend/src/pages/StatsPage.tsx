@@ -474,19 +474,29 @@ const StatsPage: React.FC = () => {
   }, [ac, ld2]);
   const hx = async () => {
     try {
-      const b = await exportExcel({
-        start: si,
-        end: ei,
-        group_id: gf || undefined,
+      // 使用原生 fetch 替代 axios blob，避免 responseType: 'blob' 的已知问题
+      const params = new URLSearchParams();
+      if (si) params.set('start', si.substring(0, 10));
+      if (ei) params.set('end', ei.substring(0, 10));
+      if (gf) params.set('group_id', String(gf));
+      const res = await fetch(`/api/export/excel?${params.toString()}`, {
+        credentials: 'include',
       });
-      const u = URL.createObjectURL(b);
-      const a = document.createElement("a");
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        let msg = `导出失败 (HTTP ${res.status})`;
+        try { const j = JSON.parse(txt); if (j.message) msg = j.message; } catch {}
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = u;
       a.download = `样品管理_${s}_${e}.xlsx`;
       a.click();
       URL.revokeObjectURL(u);
-    } catch {
-      setEr("导出失败");
+    } catch (e: any) {
+      setEr(e?.message || '导出失败');
     }
   };
   const oed = (r: WorkRecord) => {
@@ -2027,6 +2037,12 @@ const StatsPage: React.FC = () => {
             </Button>
           </Box>
         </Box>
+      )}
+      {/* 全局错误提示 — 不在编辑模式或卡片视图也能看到 */}
+      {er && (
+        <Alert severity="error" sx={{ mb: 2, borderRadius: R }} onClose={() => setEr('')}>
+          {er}
+        </Alert>
       )}
       {ac ? (
         cct()
