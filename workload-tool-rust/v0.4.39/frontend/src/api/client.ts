@@ -209,20 +209,19 @@ export const getStatsByDivision = (params?: { start?: string; end?: string; divi
 
 // --- Export ---
 export const exportExcel = (params: { start?: string; end?: string; group_id?: number }): Promise<Blob> =>
-  client.get('/export/excel', { params, responseType: 'blob' })
-    .then(async (r) => {
-      // 检查 HTTP 状态码，非 200 说明是错误响应
+  client.get('/export/excel', { params, responseType: 'arraybuffer' })
+    .then((r) => {
       if (r.status !== 200) {
-        const text = await r.data.text();
         try {
+          const text = new TextDecoder().decode(r.data);
           const json = JSON.parse(text);
           throw new Error(json.message || '导出失败');
         } catch (e) {
           if (e instanceof Error) throw e;
-          throw new Error(text || '导出失败');
+          throw new Error('导出失败');
         }
       }
-      return r.data;
+      return new Blob([r.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     });
 
 // --- Audit ---
@@ -346,19 +345,19 @@ export const getRdStatsByInstrument = (params?: { start?: string; end?: string; 
 
 // --- RD Export ---
 export const exportRdExcel = (params: { start?: string; end?: string; group_id?: number }): Promise<Blob> =>
-  client.get('/rd-export/excel', { params, responseType: 'blob' })
-    .then(async (r) => {
+  client.get('/rd-export/excel', { params, responseType: 'arraybuffer' })
+    .then((r) => {
       if (r.status !== 200) {
-        const text = await r.data.text();
         try {
+          const text = new TextDecoder().decode(r.data);
           const json = JSON.parse(text);
           throw new Error(json.message || '导出失败');
         } catch (e) {
           if (e instanceof Error) throw e;
-          throw new Error(text || '导出失败');
+          throw new Error('导出失败');
         }
       }
-      return r.data;
+      return new Blob([r.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     });
 
 // --- RD Export Preview ---
@@ -464,19 +463,19 @@ export const deleteSampleInfoType = (id: number): Promise<ApiResponse<null>> =>
 
 // ========== v0.4.23: 样品信息登记导出（独立接口） ==========
 export const exportSampleInfo = (params: { start?: string; end?: string }): Promise<Blob> =>
-  client.get('/sample-info/export', { params, responseType: 'blob' })
-    .then(async (r) => {
+  client.get('/sample-info/export', { params, responseType: 'arraybuffer' })
+    .then((r) => {
       if (r.status !== 200) {
-        const text = await r.data.text();
         try {
+          const text = new TextDecoder().decode(r.data);
           const json = JSON.parse(text);
           throw new Error(json.message || '导出失败');
         } catch (e) {
           if (e instanceof Error) throw e;
-          throw new Error(text || '导出失败');
+          throw new Error('导出失败');
         }
       }
-      return r.data;
+      return new Blob([r.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     });
 
 // ========== v0.4.26: 列自定义 API ==========
