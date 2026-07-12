@@ -479,8 +479,11 @@ const StatsPage: React.FC = () => {
       if (si) params.set('start', si.substring(0, 10));
       if (ei) params.set('end', ei.substring(0, 10));
       if (gf) params.set('group_id', String(gf));
+      // 显式附带 token（fetch 不会自动加 Authorization）
+      const token = localStorage.getItem('workload_token') || sessionStorage.getItem('workload_token') || '';
       const res = await fetch(`/api/export/excel?${params.toString()}`, {
         credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
@@ -489,12 +492,16 @@ const StatsPage: React.FC = () => {
         throw new Error(msg);
       }
       const blob = await res.blob();
+      // 验证 blob 真的不是错误（size>0 & content-type 是 xlsx）
+      if (blob.size === 0) throw new Error('导出文件为空');
       const u = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = u;
       a.download = `样品管理_${s}_${e}.xlsx`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(u);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(u), 1000);
     } catch (e: any) {
       setEr(e?.message || '导出失败');
     }
