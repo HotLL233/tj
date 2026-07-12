@@ -1,0 +1,102 @@
+classDiagram
+    class SampleInfoColumn {
+        +i64 id
+        +String column_key
+        +String display_name
+        +String column_type
+        +i64 sort_order
+        +bool is_active
+        +String created_at
+        +String updated_at
+    }
+
+    class SampleInfoColumnCreate {
+        +String column_key
+        +String display_name
+        +String column_type
+        +i64 sort_order
+    }
+
+    class SampleInfoColumnUpdate {
+        +Option~String~ display_name
+        +Option~String~ column_type
+        +Option~i64~ sort_order
+        +Option~bool~ is_active
+    }
+
+    class SampleInfoRecord_v0426 {
+        +i64 id
+        +String status
+        +i64 seq_no
+        +String batch_no
+        +String user_name
+        +String lab_name
+        +String project_name
+        +String submitted_at
+        +String detection_date
+        +String main_components
+        +String detection_type
+        +String type_key
+        +Option~i64~ division_id
+        +i64 quantity
+        +String notes
+        +Option~String~ extra_fields
+        +String created_at
+        +Option~String~ updated_at
+        +Option~String~ deleted_at
+    }
+
+    class SampleInfoResponse_v0426 {
+        +i64 id
+        +String status
+        +i64 seq_no
+        +String batch_no
+        +String user_name
+        +String lab_name
+        +String project_name
+        +String submitted_at
+        +String detection_date
+        +String main_components
+        +String detection_type
+        +String type_key
+        +Option~i64~ division_id
+        +i64 quantity
+        +String notes
+        +Option~String~ extra_fields
+        +String created_at
+        +Option~String~ updated_at
+    }
+
+    class SampleInfoCreate_v0426 {
+        +String batch_no
+        +String user_name
+        +String lab_name
+        +String project_name
+        +Option~String~ submitted_at
+        +Option~String~ detection_date
+        +String main_components
+        +String detection_type
+        +String type_key
+        +Option~i64~ division_id
+        +i64 quantity
+        +Option~String~ notes
+        +Option~String~ extra_fields
+    }
+
+    class SampleInfoUpdate_v0426 {
+        +Option~String~ status
+        +Option~String~ batch_no
+        +Option~String~ user_name
+        +Option~String~ lab_name
+        +Option~String~ project_name
+        +Option~String~ submitted_at
+        +Option~String~ detection_date
+        +Option~String~ main_components
+        +Option~i64~ division_id
+        +Option~i64~ quantity
+        +Option~String~ notes
+        +Option~String~ extra_fields
+    }
+
+    SampleInfoColumnCreate --|> SampleInfoColumn : creates
+    SampleInfoColumnUpdate --|> SampleInfoColumn : updates
