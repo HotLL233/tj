@@ -1,66 +1,26 @@
 sequenceDiagram
-    participant User as 用户
-    participant F as Frontend (React)
-    participant API as Backend (Axum)
+    actor U as 用户
+    participant FE as 前端(axios)
+    participant MW as AuthLayer(中间件)
+    participant H as 业务Handler
+    participant S as Service/Repo
     participant DB as SQLite
 
-    %% ── 方法导入流程 ──
-    rect rgb(232, 245, 233)
-        Note over User,DB: P0-2/P0-3: 方法导入智能识别
-
-        User->>F: 选择 Excel 文件上传
-        F->>API: POST /api/methods/import (multipart)
-        API->>API: calamine 读取 Excel
-        API->>API: 扫描所有列头 (headers)
-
-        loop 遍历每个列头
-            alt 列头包含中文"方法"
-                API->>API: 提取类型名 = header.replace("方法","")
-                Note over API: e.g. "液相方法" → "液相"
-                API->>DB: SELECT id FROM method_types WHERE name=?
-                alt 类型不存在
-                    API->>DB: INSERT INTO method_types (name)
-                end
-                API->>API: 将该列标记为 method 列
-            else 列头不包含"方法"
-                API->>DB: 查询 import_mappings 匹配
-                API->>API: 按映射规则路由到 project_groups / projects
-            end
-        end
-
-        loop 遍历 method 列的每行
-            API->>DB: SELECT id FROM methods WHERE name=?
-            alt 方法已存在 (去重 P0-5)
-                API->>API: 跳过该行
-            else 方法不存在
-                API->>DB: INSERT INTO methods (name)
-                API->>DB: INSERT INTO method_type_links
-            end
-        end
-
-        API-->>F: ImportSummary (total_methods, by_type)
-        F-->>User: 显示导入结果
-    end
-
-    %% ── 扁平化记录查询 ──
-    rect rgb(227, 242, 253)
-        Note over User,DB: P0-4: SampleListPage 7字段展示
-
-        User->>F: 打开 SampleListPage
-        F->>API: GET /api/records/flat?page=1&page_size=20
-        API->>DB: SELECT wr.*, p.name, pg.name, m.name, mt.name<br/>FROM work_records wr<br/>JOIN projects p ON wr.project_id=p.id<br/>JOIN project_groups pg ON p.group_id=pg.id<br/>LEFT JOIN project_method_links pml ON p.id=pml.project_id<br/>LEFT JOIN methods m ON pml.method_id=m.id<br/>LEFT JOIN method_type_links mtl ON m.id=mtl.method_id<br/>LEFT JOIN method_types mt ON mtl.method_type_id=mt.id<br/>ORDER BY wr.recorded_at DESC
-        DB-->>API: 扁平化记录列表
-        API-->>F: PaginatedResponse~FlatRecordResponse~
-        F-->>User: 7列表格展示<br/>(时间|实验室|项目|录入人|方法|类型|数量)
-    end
-
-    %% ── 移动端响应式 ──
-    rect rgb(255, 243, 224)
-        Note over User,F: P0-1: 移动端全局适配
-
-        User->>F: 手机浏览器访问 (< 768px)
-        F->>F: 检测 viewport 宽度
-        F->>F: 应用响应式 CSS 规则<br/>body: overflow-x:hidden<br/>table: overflow-x:auto<br/>文字: word-wrap:break-word
-        F->>F: 组件布局切换<br/>EntryPage: 多列→单列<br/>ManagePage: 3列网格→单列堆叠<br/>StatsPage: 卡片→全宽+Accordion筛选区<br/>SampleListPage: 前3列固定+后4列横向滚动
-        F-->>User: 无横向滚动条的移动端界面
+    U->>FE: 输入账号密码
+    FE->>H: POST /api/auth/login
+    H->>DB: 查 users + 校验 argon2
+    H-->>FE: {code:0, data:{token, must_change_password}}
+    FE->>FE: localStorage 存 token
+    Note over FE: 后续请求拦截器注入 Authorization: Bearer
+    FE->>MW: POST /api/inventory/items (带 Bearer)
+    MW->>MW: 解析JWT→Claims(role,perms)
+    alt 无/无效token
+        MW-->>FE: {code:401, message:"未登录"}
+    else 权限不足
+        MW-->>FE: {code:403, message:"无权限"}
+    else 通过
+        MW->>H: 注入 AuthedUser
+        H->>H: require("inventory:write")
+        H->>S->>DB: 写业务 + 同事务写 audit_log(module='inventory')
+        S-->>FE: {code:0, data:...}
     end

@@ -39,7 +39,11 @@ const Layout: React.FC = () => {
           </Button>
         )}
       </Box>}
-      {isLoggedIn && <UserMenu />}
+      {isLoggedIn ? <UserMenu /> : (
+        <Button onClick={() => navigate('/login')} sx={{ color: '#1976d2', ml: 1 }}>
+          登录
+        </Button>
+      )}
       <IconButton onClick={() => setAboutOpen(true)} title="关于" sx={{ ml: { xs: 0, md: 1 }, color: '#555' }}><InfoIcon /></IconButton>
     </Toolbar></AppBar>
 

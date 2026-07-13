@@ -1,7 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box } from '@mui/material';
-import { UserProvider } from './UserContext';
+import { UserProvider, useUser } from './UserContext';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import SamplePortal from './pages/SamplePortal';
@@ -30,12 +30,19 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
 const NotFoundPage: React.FC = () => <div style={{ padding: '2rem', textAlign: 'center', marginTop: '10vh' }}><h1 style={{ fontSize: '4rem', color: '#ccc', margin: 0 }}>404</h1><p style={{ color: '#666', marginTop: '1rem' }}>页面未找到</p></div>;
 
+/** v0.4.33 补丁: 未登录跳转到 /login（用于根路径 /） */
+const RequireAuth: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { isLoggedIn } = useUser();
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
 const App: React.FC = () => (<ErrorBoundary><UserProvider><Routes><Route element={<Layout />}>
   {/* 公开路由 */}
   <Route path="/login" element={<Box sx={{ position: 'fixed', inset: 0, zIndex: 9999 }}><LoginPage /></Box>} />
 
-  {/* 一级: 两大入口卡片 */}
-  <Route path="/" element={<HomePage />} />
+  {/* v0.4.33 补丁: 未登录访问根路径时直接跳转登录页 */}
+  <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
 
   {/* 送样分支: /sample → portal → entry/list/stats — v0.4.27-A: 需登录 */}
   <Route path="/sample" element={<ProtectedRoute><SamplePortal /></ProtectedRoute>} />

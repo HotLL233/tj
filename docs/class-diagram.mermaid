@@ -1,118 +1,113 @@
 classDiagram
-    class WorkRecord {
+    %% RBAC
+    class User {
         +i64 id
-        +i64 project_id
-        +String user_name
-        +i32 quantity
-        +String recorded_at
-        +String created_at
-        +Option~String~ deleted_at
+        +String username
+        +String password_hash
+        +i64 role_id
+        +i64 lab_id
+        +bool must_change_password
     }
-
-    class Project {
-        +i64 id
-        +i64 group_id
-        +String name
-        +String full_name
-        +String notes
-        +i64 sort_order
-        +bool is_active
-        +String created_at
-    }
-
-    class ProjectGroup {
+    class Role {
         +i64 id
         +String name
-        +i64 sort_order
-        +String created_at
+        +bool is_system
     }
+    class RolePermission {
+        +i64 id
+        +i64 role_id
+        +String permission
+    }
+    User "1" --> "1" Role : role_id
+    Role "1" --> "*" RolePermission : 权限点
 
-    class Method {
+    %% 仪器
+    class Instrument {
         +i64 id
         +String name
-        +String full_name
-        +f64 coefficient
-        +f64 amount
-        +String notes
-        +bool is_active
-        +String created_at
+        +String status
+        +String qr_code_path
     }
+    class InstrumentBooking {
+        +i64 id
+        +i64 instrument_id
+        +String status
+    }
+    class InstrumentMaintenance {
+        +i64 id
+        +i64 instrument_id
+    }
+    Instrument "1" --> "*" InstrumentBooking
+    Instrument "1" --> "*" InstrumentMaintenance
 
-    class MethodType {
+    %% 库存
+    class InventoryItem {
         +i64 id
         +String name
-        +i64 sort_order
+        +i64 category_id
     }
-
-    class ProjectMethodLink {
-        +i64 project_id
-        +i64 method_id
-    }
-
-    class MethodTypeLink {
-        +i64 method_id
-        +i64 method_type_id
-    }
-
-    class ProjectLabLink {
-        +i64 project_id
-        +i64 group_id
-    }
-
-    class FlatRecordResponse {
+    class InventoryBatch {
         +i64 id
-        +i64 project_id
-        +String project_name
-        +String group_name
-        +String user_name
-        +i32 quantity
-        +String recorded_at
-        +String created_at
-        +Option~String~ deleted_at
-        +String method_name
-        +String method_type_name
+        +i64 item_id
+        +f64 quantity
     }
-
-    class ImportMapping {
+    class InventoryTransaction {
         +i64 id
-        +String header_pattern
-        +String match_mode
-        +String target_table
-        +String default_type
+        +i64 item_id
+        +String tx_type
+    }
+    InventoryItem "1" --> "*" InventoryBatch
+    InventoryItem "1" --> "*" InventoryTransaction
+    InventoryBatch "1" --> "0..*" InventoryTransaction : batch_id
+
+    %% 采购
+    class Supplier {
+        +i64 id
+        +String name
+    }
+    class PurchaseRequisition {
+        +i64 id
+        +String status
+    }
+    class PurchaseOrder {
+        +i64 id
+        +String order_no
+        +i64 supplier_id
+    }
+    class PurchaseOrderItem {
+        +i64 id
+        +i64 order_id
+    }
+    Supplier "1" --> "*" PurchaseOrder
+    PurchaseOrder "1" --> "*" PurchaseOrderItem
+    PurchaseRequisition "0..*" ..> "0..1" PurchaseOrder : 转订单
+
+    %% 审批
+    class ApprovalRule {
+        +i64 id
+        +String biz_type
         +i64 priority
-        +bool is_active
+    }
+    class ApprovalTask {
+        +i64 id
+        +String biz_type
+        +String status
+    }
+    ApprovalRule "1" --> "*" ApprovalTask : 生成待办
+
+    %% 通知 / 审计
+    class Notification {
+        +i64 id
+        +String recipient
+        +bool is_read
+    }
+    class AuditLog {
+        +i64 id
+        +String action
+        +String module
+        +String before_json
+        +String after_json
     }
 
-    class MethodImportItem {
-        +String group_name
-        +String project_name
-        +String method_name
-        +String method_type
-        +f64 coefficient
-    }
-
-    class ImportSummary {
-        +usize total_methods
-        +usize total_projects
-        +usize total_groups
-        +Vec~TypeCount~ by_type
-    }
-
-    class TypeCount {
-        +String method_type
-        +usize count
-    }
-
-    WorkRecord "N" --> "1" Project : project_id
-    Project "N" --> "1" ProjectGroup : group_id
-    Project "1" --> "N" ProjectMethodLink : project_id
-    ProjectMethodLink "N" --> "1" Method : method_id
-    Method "1" --> "N" MethodTypeLink : method_id
-    MethodTypeLink "N" --> "1" MethodType : method_type_id
-    Project "1" --> "N" ProjectLabLink : project_id
-    ProjectLabLink "N" --> "1" ProjectGroup : group_id
-    FlatRecordResponse ..> WorkRecord : extends
-    FlatRecordResponse ..> Method : via JOIN
-    FlatRecordResponse ..> MethodType : via JOIN
-    MethodImportItem ..> ImportMapping : routed by
-    ImportMapping --> MethodType : default_type
+    note for AuditLog "WORM: 仅 INSERT，触发器禁止 UPDATE/DELETE"
+    note for User "module 隔离: work/rd/instrument/inventory/purchase/approval"

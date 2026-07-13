@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  workload-tool:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    image: lims-local:v0.4.22
+    container_name: lims-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    environment:
+      - WORKLOAD_DATA_DIR=/app/data

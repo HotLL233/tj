@@ -5,13 +5,14 @@ import ScienceIcon from '@mui/icons-material/Science';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import { useUser } from '../UserContext';
+import { Button } from '@mui/material';
 
 const R = '2px';
 const HomePage: React.FC = () => {
   const n = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { hasPermission } = useUser();
+  const { hasPermission, isLoggedIn } = useUser();
 
   // 三张入口卡片：按权限点门控，无权限且非管理员则隐藏
   const cards = [
@@ -58,7 +59,16 @@ const HomePage: React.FC = () => {
 
       {cards.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 6 }}>
-          <Typography variant="h6" color="text.secondary">您暂无可用功能入口，请联系管理员</Typography>
+          {isLoggedIn ? (
+            <Typography variant="h6" color="text.secondary">您暂无可用功能入口，请联系管理员</Typography>
+          ) : (
+            <>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>请先登录系统</Typography>
+              <Button variant="contained" onClick={() => n('/login')} sx={{ px: 4, py: 1.2, borderRadius: '2px' }}>
+                去登录
+              </Button>
+            </>
+          )}
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 3, flexWrap: 'wrap', justifyContent: 'center', alignItems: isMobile ? 'center' : undefined, mb: 4 }}>

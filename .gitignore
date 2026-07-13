@@ -36,3 +36,12 @@ workload-tool-rust/*/target/
 *.xlsx
 nul
 package-lock.json
+
+# Build cache / temporary artifacts
+vite.config.ts.timestamp-*.mjs
+*.tsx.bak
+*.ts.bak
+pdfium*.zip
+
+# WorkBuddy artifacts
+.workbuddy/artifacts/

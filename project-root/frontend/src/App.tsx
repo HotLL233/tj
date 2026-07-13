@@ -8,8 +8,12 @@ import WorkloadPortal from './pages/WorkloadPortal';
 import EntryPage from './pages/EntryPage';
 import SampleEntryPage from './pages/SampleEntryPage';
 import SampleStatsPage from './pages/SampleStatsPage';
+import RdRecordsPage from './pages/RdRecordsPage';
 import StatsPage from './pages/StatsPage';
 import ManagePage from './pages/ManagePage';
+import HelpPage from './pages/HelpPage';
+import SampleInfoHome from './pages/SampleInfoHome';
+import SampleInfoEntry from './pages/SampleInfoEntry';
 
 interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
 class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
@@ -29,11 +33,17 @@ const App: React.FC = () => (<ErrorBoundary><UserProvider><Routes><Route element
   <Route path="/sample" element={<SamplePortal />} />
   <Route path="/sample/:groupId" element={<SampleEntryPage />} />
   <Route path="/sample/stats" element={<SampleStatsPage />} />
+  <Route path="/sample-records" element={<RdRecordsPage />} />
+
+  {/* 样品信息登记分支: /sample-info → home → entry/records */}
+  <Route path="/sample-info" element={<SampleInfoHome />} />
+  <Route path="/sample-info/entry" element={<SampleInfoEntry />} />
 
   {/* 工作量分支: /workload → portal → entry/stats/manage */}
   <Route path="/workload" element={<WorkloadPortal />} />
   <Route path="/entry/:groupId" element={<EntryPage />} />
   <Route path="/stats" element={<StatsPage />} />
+  <Route path="/help" element={<HelpPage />} />
   <Route path="/manage" element={<ManagePage />} />
 
   <Route path="/404" element={<NotFoundPage />} />

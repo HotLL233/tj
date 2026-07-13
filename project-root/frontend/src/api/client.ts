@@ -7,6 +7,7 @@ import type {
   Method,
   WorkRecord,
   SampleRecord,
+  SampleInfoRecord,
   SampleStats,
   AuditLog,
   StatsSummary,
@@ -18,6 +19,8 @@ import type {
   MethodType,
   ImportSummary,
   ImportMapping,
+  HelpDocument,
+  HelpArticle,
   Sheet1Data,
   Sheet2Row,
   Sheet3Row,
@@ -44,10 +47,10 @@ client.interceptors.response.use(
 export const getGroups = (): Promise<ApiResponse<ProjectGroup[]>> =>
   client.get('/groups').then((r) => r.data);
 
-export const createGroup = (data: { name: string; sort_order?: number }): Promise<ApiResponse<ProjectGroup>> =>
+export const createGroup = (data: { name: string; sort_order?: number; show_in_work?: boolean; show_in_rd?: boolean }): Promise<ApiResponse<ProjectGroup>> =>
   client.post('/groups', data).then((r) => r.data);
 
-export const updateGroup = (id: number, data: { name?: string; sort_order?: number }): Promise<ApiResponse<ProjectGroup>> =>
+export const updateGroup = (id: number, data: { name?: string; sort_order?: number; show_in_work?: boolean; show_in_rd?: boolean }): Promise<ApiResponse<ProjectGroup>> =>
   client.put(`/groups/${id}`, data).then((r) => r.data);
 
 export const deleteGroup = (id: number): Promise<ApiResponse<null>> =>
@@ -81,10 +84,10 @@ export const batchProjectCoefficient = (data: { group_id: number; coefficient: n
 export const getMethods = (params?: { type_id?: number }): Promise<ApiResponse<Method[]>> =>
   client.get('/methods', { params }).then((r) => r.data);
 
-export const createMethod = (data: { name: string; full_name?: string; coefficient?: number; amount?: number; notes?: string; type_ids?: number[] }): Promise<ApiResponse<Method>> =>
+export const createMethod = (data: { name: string; full_name?: string; coefficient?: number; multiplier?: number; amount?: number; notes?: string; type_ids?: number[] }): Promise<ApiResponse<Method>> =>
   client.post('/methods', data).then((r) => r.data);
 
-export const updateMethod = (id: number, data: { name?: string; full_name?: string; coefficient?: number; amount?: number; notes?: string; is_active?: boolean; type_ids?: number[] }): Promise<ApiResponse<Method>> =>
+export const updateMethod = (id: number, data: { name?: string; full_name?: string; coefficient?: number; multiplier?: number; amount?: number; notes?: string; is_active?: boolean; type_ids?: number[] }): Promise<ApiResponse<Method>> =>
   client.put(`/methods/${id}`, data).then((r) => r.data);
 
 export const deleteMethod = (id: number): Promise<ApiResponse<null>> =>
@@ -114,7 +117,7 @@ export const getImportMappings = (): Promise<ApiResponse<ImportMapping[]>> =>
   client.get('/import/mappings').then(r => r.data);
 
 // --- Records ---
-export const getRecords = (params: { start?: string; end?: string; group_id?: number; page?: number; page_size?: number; include_deleted?: boolean }): Promise<ApiResponse<PaginatedResponse<WorkRecord>>> =>
+export const getRecords = (params: { start?: string; end?: string; group_id?: number; page?: number; page_size?: number; include_deleted?: boolean; user_name?: string }): Promise<ApiResponse<PaginatedResponse<WorkRecord>>> =>
   client.get('/records', { params }).then((r) => r.data);
 
 export const createRecord = (data: { project_id: number; method_id?: number; user_name: string; quantity: number; recorded_at: string; group_id?: number }): Promise<ApiResponse<WorkRecord>> =>
@@ -126,8 +129,11 @@ export const deleteRecord = (id: number): Promise<ApiResponse<null>> =>
 export const restoreRecord = (id: number): Promise<ApiResponse<WorkRecord>> =>
   client.post(`/records/restore/${id}`).then((r) => r.data);
 
-export const updateRecord = (id: number, data: { user_name?: string; quantity?: number; recorded_at?: string }): Promise<ApiResponse<WorkRecord>> =>
+export const updateRecord = (id: number, data: { user_name?: string; quantity?: number; recorded_at?: string; multiplier?: number }): Promise<ApiResponse<WorkRecord>> =>
   client.put(`/records/${id}`, data).then((r) => r.data);
+
+export const getRecordUsers = (params: { start: string; end: string }): Promise<ApiResponse<string[]>> =>
+  client.get('/records/users', { params }).then((r) => r.data);
 
 export const deleteRecordsByUser = (user_name: string, params: { start: string; end: string; group_id?: number }): Promise<ApiResponse<number>> =>
   client.delete('/records/by-user', { params: { ...params, user_name } }).then((r) => r.data);
@@ -241,7 +247,7 @@ export const getPreviewSheet10 = (params: { start: string; end: string }): Promi
 // ========== 研发送样 (rd) — 与分析检测完全独立存储，共用主数据 ==========
 
 // --- RD Records ---
-export const getRdRecords = (params: { start?: string; end?: string; group_id?: number; page?: number; page_size?: number; include_deleted?: boolean }): Promise<ApiResponse<PaginatedResponse<WorkRecord>>> =>
+export const getRdRecords = (params: { start?: string; end?: string; group_id?: number; page?: number; page_size?: number; include_deleted?: boolean; user_name?: string }): Promise<ApiResponse<PaginatedResponse<WorkRecord>>> =>
   client.get('/rd-records', { params }).then((r) => r.data);
 
 export const createRdRecord = (data: { project_id: number; method_id?: number; user_name: string; quantity: number; recorded_at: string; group_id?: number }): Promise<ApiResponse<WorkRecord>> =>
@@ -258,6 +264,12 @@ export const updateRdRecord = (id: number, data: { user_name?: string; quantity?
 
 export const deleteRdRecordsByUser = (user_name: string, params: { start: string; end: string; group_id?: number }): Promise<ApiResponse<number>> =>
   client.delete('/rd-records/by-user', { params: { ...params, user_name } }).then((r) => r.data);
+
+export const sampleRdRecord = (id: number, sampler: string): Promise<ApiResponse<WorkRecord>> =>
+  client.put(`/rd-records/${id}/sample`, { sampler }).then(r => r.data);
+
+export const getRdRecordUsers = (params: { start: string; end: string }): Promise<ApiResponse<string[]>> =>
+  client.get('/rd-records/users', { params }).then((r) => r.data);
 
 // --- RD Stats ---
 export const getRdStatsSummary = (params?: { start?: string; end?: string; group_id?: number; group_by?: string }): Promise<ApiResponse<StatsSummary>> =>
@@ -322,5 +334,55 @@ export const getRdPreviewSheet9 = (params: { start: string; end: string }): Prom
 
 export const getRdPreviewSheet10 = (params: { start: string; end: string }): Promise<ApiResponse<Sheet10Row[]>> =>
   client.get('/rd-export/preview/sheet10', { params }).then((r) => r.data);
+
+// ========== v0.4.11: 帮助文档 API ==========
+
+export const getHelpDocuments = (visibleOnly?: boolean): Promise<ApiResponse<HelpDocument[]>> =>
+  client.get('/help-documents', { params: { visible_only: visibleOnly ?? true } }).then((r) => r.data);
+
+export const uploadHelpDocument = (formData: FormData): Promise<ApiResponse<HelpDocument>> =>
+  client.post('/help-documents', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data);
+
+export const updateHelpDocument = (id: number, data: { title?: string; is_visible?: boolean; sort_order?: number }): Promise<ApiResponse<HelpDocument>> =>
+  client.put(`/help-documents/${id}`, data).then((r) => r.data);
+
+export const deleteHelpDocument = (id: number): Promise<ApiResponse<null>> =>
+  client.delete(`/help-documents/${id}`).then((r) => r.data);
+
+export const getHelpDocumentFileUrl = (id: number): string =>
+  `/api/help-documents/${id}/file`;
+
+export const getHelpDocumentPageUrl = (id: number, page: number): string =>
+  `/api/help-documents/${id}/pages/${page}`;
+
+// v0.4.19: 结构化文章
+export const getHelpArticles = (visibleOnly?: boolean): Promise<ApiResponse<HelpArticle[]>> =>
+  client.get('/help-articles', { params: { visible_only: visibleOnly ?? true } }).then(r => r.data);
+
+export const getHelpArticle = (id: number): Promise<ApiResponse<HelpArticle>> =>
+  client.get(`/help-articles/${id}`).then(r => r.data);
+
+export const deleteHelpArticle = (id: number): Promise<ApiResponse<null>> =>
+  client.delete(`/help-articles/${id}`).then(r => r.data);
+
+export const updateHelpArticle = (id: number, data: { title?: string; is_visible?: boolean; sort_order?: number }): Promise<ApiResponse<HelpArticle>> =>
+  client.put(`/help-articles/${id}`, data).then(r => r.data);
+
+// ========== v0.4.22: 样品信息登记 API ==========
+
+export const getSampleInfoRecords = (params?: { detection_type?: string; status?: string; page?: number; page_size?: number }): Promise<ApiResponse<PaginatedResponse<SampleInfoRecord>>> =>
+  client.get('/sample-info', { params }).then(r => r.data);
+
+export const createSampleInfo = (data: { batch_no: string; user_name: string; lab_name: string; project_name: string; submitted_at?: string; detection_date: string; main_components: string; detection_type: string; notes?: string }): Promise<ApiResponse<SampleInfoRecord>> =>
+  client.post('/sample-info', data).then(r => r.data);
+
+export const updateSampleInfo = (id: number, data: { status?: string; batch_no?: string; user_name?: string; lab_name?: string; project_name?: string; submitted_at?: string; detection_date?: string; main_components?: string; notes?: string }): Promise<ApiResponse<SampleInfoRecord>> =>
+  client.put(`/sample-info/${id}`, data).then(r => r.data);
+
+export const deleteSampleInfo = (id: number): Promise<ApiResponse<null>> =>
+  client.delete(`/sample-info/${id}`).then(r => r.data);
+
+export const updateSampleInfoStatus = (id: number, status: string): Promise<ApiResponse<SampleInfoRecord>> =>
+  client.put(`/sample-info/${id}/status`, { status }).then(r => r.data);
 
 export default client;

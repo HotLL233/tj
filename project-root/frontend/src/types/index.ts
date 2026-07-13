@@ -5,6 +5,10 @@ export interface ProjectGroup {
   description?: string;
   created_at: string;
   project_count?: number;
+  project_names?: string;
+  rd_record_count?: number;
+  show_in_work?: boolean;
+  show_in_rd?: boolean;
 }
 
 // v0.2.17: 卡片独立 — Project 简化
@@ -31,6 +35,7 @@ export interface Method {
   name: string;
   full_name: string;
   coefficient: number;
+  multiplier: number;
   amount?: number;
   notes: string;
   is_active: boolean;
@@ -61,7 +66,11 @@ export interface WorkRecord {
   instrument_type?: string;
   method_name?: string;
   method_type?: string;
+  multiplier?: number;
   created_at: string;
+  status?: string;
+  sampler?: string;
+  sampled_at?: string;
 }
 
 export interface SampleRecord {
@@ -146,6 +155,7 @@ export interface RecordUpdate {
   user_name?: string;
   quantity?: number;
   recorded_at?: string;
+  multiplier?: number;
 }
 
 // --- API Response ---
@@ -219,7 +229,7 @@ export interface BackupStatus {
   backup_count: number;
   backup_files: { name: string; size: number; time: string }[];
   db_size: number;
-  tables: { table: string; rows: number }[];
+  tables: { table: string; rows: number; label?: string }[];
   backups_dir: string;
 }
 
@@ -322,8 +332,60 @@ export interface Sheet9Row {
   instrument_type: string;
 }
 
+// ========== v0.4.11: 帮助文档 ==========
+export interface HelpDocument {
+  id: number;
+  title: string;
+  filename: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  is_visible: boolean;
+  sort_order: number;
+  page_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TocItem {
+  id: string;
+  text: string;
+  level: number;
+  children: TocItem[];
+}
+
+export interface HelpArticle {
+  id: number;
+  title: string;
+  content_html: string;
+  toc_json: string | null;
+  source_file: string | null;
+  is_visible: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // Sheet 10: 理化汇总表
 export interface Sheet10Row {
   method: string;
   quantity: number;
+}
+
+// ========== v0.4.22: 样品信息登记 ==========
+export interface SampleInfoRecord {
+  id: number;
+  status: string;
+  seq_no: number;
+  batch_no: string;
+  user_name: string;
+  lab_name: string;
+  project_name: string;
+  submitted_at: string;
+  detection_date: string;
+  main_components: string;
+  detection_type: string;
+  notes: string;
+  created_at: string;
+  updated_at?: string;
 }

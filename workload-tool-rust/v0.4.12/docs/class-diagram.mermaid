@@ -1,0 +1,81 @@
+classDiagram
+    class HelpDocument {
+        +i64 id
+        +String title
+        +String filename
+        +String file_path
+        +String file_type
+        +i64 file_size
+        +bool is_visible
+        +i64 sort_order
+        +String created_at
+        +String updated_at
+    }
+
+    class HelpDocCreateRequest {
+        +String title
+        +Vec~u8~ file_content
+        +String original_filename
+        +String content_type
+    }
+
+    class HelpDocUpdateRequest {
+        +Option~String~ title
+        +Option~bool~ is_visible
+        +Option~i64~ sort_order
+    }
+
+    class HelpDocumentResponse {
+        +i64 id
+        +String title
+        +String filename
+        +String file_type
+        +i64 file_size
+        +bool is_visible
+        +i64 sort_order
+        +String created_at
+        +String updated_at
+    }
+
+    class ApiResponse~T~ {
+        +i32 code
+        +String message
+        +Option~T~ data
+    }
+
+    class PaginatedResponse~T~ {
+        +Vec~T~ items
+        +i64 total
+        +i64 page
+        +i64 page_size
+    }
+
+    class AppError {
+        <<enumeration>>
+        Database
+        Pool
+        Xlsx
+        NotFound
+        Validation
+        Conflict
+        Internal
+    }
+
+    HelpDocCreateRequest --> HelpDocument : creates
+    HelpDocUpdateRequest --> HelpDocument : updates
+    HelpDocumentResponse --> HelpDocument : serializes from
+    ApiResponse --> HelpDocumentResponse : wraps
+    ApiResponse --> HelpDocument : wraps list
+
+    class HelpDocument_TS {
+        +number id
+        +string title
+        +string filename
+        +string file_type
+        +number file_size
+        +boolean is_visible
+        +number sort_order
+        +string created_at
+        +string updated_at
+    }
+    Note for HelpDocument_TS: frontend/src/types/index.ts

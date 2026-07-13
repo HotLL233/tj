@@ -1,45 +1,38 @@
-; 工作量统计工具 (Rust) v0.3.23 — Inno Setup 安装脚本
-
-#define MyAppName "工作量统计工具 (Rust) v0.3.23"
-#define MyAppVersion "0.3.23"
-#define MyAppPublisher "HotLL"
+#define MyAppVersion "0.4.22"
 #define MyAppExeName "workload-tool.exe"
 
 [Setup]
-AppId={{D6E8F0A2-C4B3-4E7F-9D0A-BCDEF2345679}
-AppName={#MyAppName}
+AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+AppName=工作量统计工具
 AppVersion={#MyAppVersion}
-AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
-DisableProgramGroupPage=yes
+AppPublisher=WorkloadTool
+DefaultDirName={autopf}\工作量统计工具
 OutputDir=D:\桌面\工作量统计工具项目\installer
-OutputBaseFilename=工作量统计工具_Rust_v0.3.23_Setup
+OutputBaseFilename=工作量统计工具_Rust_v0.4.22_Setup
+SetupIconFile=D:\桌面\工作量统计工具项目\workload-tool-rust\v0.4.21\icon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-UninstallDisplayIcon={app}\{#MyAppExeName}
-PrivilegesRequired=lowest
-ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "快捷方式："; Flags: checkedonce
+Name: "desktopicon"; Description: "创建桌面快捷方式"
 
 [Files]
-Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.3.23\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.3.23\static\*"; DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.3.23\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.4.21\dist\workload-tool.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.4.21\static\*"; DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs
+Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.4.21\backend\static\*"; DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs
+Source: "D:\桌面\工作量统计工具项目\workload-tool-rust\v0.4.21\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\卸载 {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{group}\工作量统计工具"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\卸载 工作量统计工具"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\工作量统计工具"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "启动 {#MyAppName}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\data"
