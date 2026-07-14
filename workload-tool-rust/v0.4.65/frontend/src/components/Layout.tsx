@@ -84,8 +84,8 @@ const Layout: React.FC = () => {
         <Box sx={{ textAlign: 'left', px: 1 }}>{F_LIST.map((text, i) => <Typography key={i} variant="body2" sx={{ py: 0.5 }}>{text}</Typography>)}</Box>
         <Typography variant="caption" sx={{ mt: 3, display: 'block', color: 'text.disabled', textAlign: 'center' }}>&copy; 2026 HotLL</Typography>
       </DialogContent>
-      <BackToTop />
     </Dialog>
+    <BackToTop />
   </Box>);
 };
 export default Layout;
