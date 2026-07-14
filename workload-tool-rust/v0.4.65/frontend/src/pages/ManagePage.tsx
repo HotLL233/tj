@@ -303,7 +303,7 @@ const ManagePage: React.FC = () => {
   const loadUsers = useCallback(async () => {
     try {
       const r = await userList();
-      if (r.code === 0 && r.data) setUsers(r.data);
+      if (r.code === 0 && r.data) setUsers(r.data.filter((u: any) => u.is_active));
     } catch {}
   }, []);
   const handleSaveUser = async () => {
@@ -498,7 +498,7 @@ const ManagePage: React.FC = () => {
 
   // v0.3.15: 初始加载时也加载方法类型，否则项目编辑对话框的"关联检测方法"按类型分组时 mts 为空
   useEffect(() => { setLd(true); Promise.all([lg(), lp(), lt(), lm(), lmt()]).finally(() => setLd(false)); }, [lg, lp, lt, lm, lmt]);
-  useEffect(() => { if (tb === 'audit') la(1); if (tb === 'backup') loadBk(); if (tb === 'methods') { lmt(); lm(); } if (tb === 'trash') loadTrash(); if (tb === 'help') { loadHelpDocs(); loadHelpArticles(); } if (tb === 'users') { userList().then(r => { if (r.code === 0 && r.data) setUsers(r.data); }).catch(() => {}); getRoles().then(r => { if (r.code === 0 && r.data) setRoles(r.data); }).catch(() => {}); } }, [tb, la, lmt, lm, loadUsers]);
+  useEffect(() => { if (tb === 'audit') la(1); if (tb === 'backup') loadBk(); if (tb === 'methods') { lmt(); lm(); } if (tb === 'trash') loadTrash(); if (tb === 'help') { loadHelpDocs(); loadHelpArticles(); } if (tb === 'users') { userList().then(r => { if (r.code === 0 && r.data) setUsers(r.data.filter((u: any) => u.is_active)); }).catch(() => {}); getRoles().then(r => { if (r.code === 0 && r.data) setRoles(r.data); }).catch(() => {}); } }, [tb, la, lmt, lm, loadUsers]);
 
   // v0.4.23: 样品信息登记管理数据加载
   useEffect(() => {
@@ -2594,7 +2594,7 @@ const ManagePage: React.FC = () => {
         <Button onClick={() => { setImportDialogOpen(false); setImportFile(null); setImportResult(null); }} sx={{ borderRadius: R }}>关闭</Button>
         <Button variant="contained" disabled={!importFile} onClick={async () => {
           if (!importFile) return;
-          try { const r = await importUsers(importFile); if (r.code === 0) { setImportResult(r.data); userList().then(r2 => { if (r2.code === 0 && r2.data) setUsers(r2.data); }).catch(() => {}); } else { sm(r.message, true); } }
+          try { const r = await importUsers(importFile); if (r.code === 0) { setImportResult(r.data); userList().then(r2 => { if (r2.code === 0 && r2.data) setUsers(r2.data.filter((u: any) => u.is_active)); }).catch(() => {}); } else { sm(r.message, true); } }
           catch { sm('导入失败', true); }
         }} sx={{ borderRadius: R, bgcolor: '#2e7d32' }}>开始导入</Button>
       </DialogActions>
