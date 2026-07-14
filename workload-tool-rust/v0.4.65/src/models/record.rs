@@ -15,6 +15,7 @@ pub struct RecordResponse {
     pub method_name: Option<String>,
     pub method_type: Option<String>,
     pub multiplier: f64,
+    pub high_item: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

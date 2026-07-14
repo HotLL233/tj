@@ -36,7 +36,8 @@ pub fn list(
                 (SELECT group_concat(DISTINCT mt.name)
                  FROM method_type_links mtl
                  JOIN method_types mt ON mtl.method_type_id = mt.id
-                 WHERE mtl.method_id = wr.method_id) AS method_type
+                 WHERE mtl.method_id = wr.method_id) AS method_type,
+                p.high_item AS high_item
          FROM work_records wr
          JOIN projects p ON wr.project_id = p.id
          LEFT JOIN methods m ON wr.method_id = m.id
@@ -54,6 +55,7 @@ pub fn list(
             quantity: row.get(6)?, multiplier: row.get::<_, f64>(7).unwrap_or(1.0),
             recorded_at: row.get(8)?, created_at: row.get(9)?,
             deleted_at: row.get(10)?, method_name: row.get(11)?, method_type: row.get(12)?,
+            high_item: row.get::<_, Option<String>>(13).unwrap_or(None),
         }),
     )?;
     let items: Vec<RecordResponse> = rows.collect::<std::result::Result<Vec<_>, _>>()?;
@@ -84,7 +86,8 @@ fn get_by_id_on_conn(conn: &rusqlite::Connection, id: i64) -> Result<RecordRespo
                 (SELECT group_concat(DISTINCT mt.name)
                  FROM method_type_links mtl
                  JOIN method_types mt ON mtl.method_type_id = mt.id
-                 WHERE mtl.method_id = wr.method_id) AS method_type
+                 WHERE mtl.method_id = wr.method_id) AS method_type,
+                p.high_item AS high_item
          FROM work_records wr
          JOIN projects p ON wr.project_id = p.id
          LEFT JOIN methods m ON wr.method_id = m.id
@@ -95,6 +98,7 @@ fn get_by_id_on_conn(conn: &rusqlite::Connection, id: i64) -> Result<RecordRespo
             quantity: row.get(6)?, multiplier: row.get::<_, f64>(7).unwrap_or(1.0),
             recorded_at: row.get(8)?, created_at: row.get(9)?,
             deleted_at: row.get(10)?, method_name: row.get(11)?, method_type: row.get(12)?,
+            high_item: row.get::<_, Option<String>>(13).unwrap_or(None),
         }),
     ).map_err(|e| match e {
         rusqlite::Error::QueryReturnedNoRows => crate::error::AppError::NotFound("记录不存在".into()),
@@ -111,8 +115,8 @@ pub fn create(pool: &DbPool, body: &RecordCreate) -> Result<RecordResponse> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
     tx.execute(
-        "INSERT INTO work_records (project_id, method_id, user_name, quantity, recorded_at, group_id, division_id, multiplier)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, COALESCE(?8, (SELECT m.multiplier FROM methods m WHERE m.id = ?2), 1.0))",
+        "INSERT INTO work_records (project_id, method_id, user_name, quantity, recorded_at, group_id, division_id, multiplier, high_item)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, COALESCE(?8, (SELECT m.multiplier FROM methods m WHERE m.id = ?2), 1.0), (SELECT high_item FROM projects WHERE id=?1))",
         rusqlite::params!(body.project_id, body.method_id, &body.user_name, body.quantity, &body.recorded_at, body.group_id, body.division_id, body.multiplier),
     )?;
     let id = tx.last_insert_rowid();

@@ -1,0 +1,26 @@
+services:
+  workload-tool:
+    image: ghcr.io/hotll233/workload-tool:latest
+    pull_policy: always
+    container_name: workload-tool
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    environment:
+      - WORKLOAD_DATA_DIR=/app/data
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - --interval=86400
+      - --cleanup
+      - --label-enable
+      - workload-tool
+    restart: unless-stopped

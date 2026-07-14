@@ -1,0 +1,61 @@
+# .versionignore — 版本拷贝排除规则
+# 格式：每行一个 glob 模式，# 开头为注释
+# 用于 version-copy.ps1 脚本，确保拷贝时不携带垃圾文件
+
+# ===== Rust 编译产物 =====
+target/                          # Cargo 构建输出目录（release ~1.5GB+，debug 同等规模）
+*.pdb                            # Windows 程序调试符号文件
+*.d                              # Cargo 增量编译依赖信息
+CACHEDIR.TAG                     # 缓存目录标记文件（target 内自动生成）
+
+# ===== 前端依赖与构建产物 =====
+frontend/node_modules/           # NPM 依赖包（数百 MB，耗时下载）
+frontend/dist/                   # Vite 构建输出（与 backend/static/ 冗余）
+
+# ===== 后端构建产物 =====
+dist/                            # 编译后的 workload-tool.exe（15MB+）
+backend/                         # Vite 构建输出目标目录（outDir: ../backend/static）
+# 注意：vite.config.ts 中 build.outDir 设置为 '../backend/static'，
+# 前端编译后资源落在此处，非源码，不应被版本拷贝携带
+
+# ===== 嵌套源码副本 =====
+frontend/src/src/                # 嵌套的 src/src/ 目录（最多 4 层深），
+# 包含完整的源码副本，由复制操作误产生，导致搜索重复、体积失真
+
+# ===== 运行时数据（禁止携带） =====
+data/                            # SQLite 数据库文件存储目录（运行态数据）
+*.db                             # SQLite 数据库文件（用户数据，不应带入新版本）
+*.db-shm                         # SQLite WAL 共享内存文件
+*.db-wal                         # SQLite WAL 预写日志文件
+
+# ===== IDE / 编辑器配置 =====
+.vscode/                         # VS Code 工作区配置（非源码）
+.idea/                           # JetBrains IDE 配置（非源码）
+.codebuddy/                      # CodeBuddy 工作区数据
+.workbuddy/                      # WorkBuddy 工作区数据
+.claude/                         # Claude 工作区缓存
+
+# ===== 备份文件 =====
+*.bak                            # 备份/临时文件（如 StatsPage.tsx.bak）
+*.timestamp-*.mjs                # Vite 配置时间戳缓存文件
+
+# ===== 历史版本目录（项目级引用，非源码） =====
+# 注意：.versionignore 中的模式相对于拷贝源目录。
+# 若源目录为 v0.4.47 等单一版本目录，则不存在 v0.2.x 等历史版本，
+# 历史版本目录存在于 workload-tool-rust/ 下，不会出现在源目录中。
+# 保留此项供根目录拷贝场景使用：
+v0.*/                            # 历史版本目录（v0.2.1 ~ v0.4.50）
+0.*/                             # 0.x.x 版本编号目录（如 0.1.0/）
+
+# ===== 已发布安装包 =====
+installer/                       # InnoSetup 输出的 .exe 安装包目录
+*_Setup.exe                      # 已生成的安装包文件
+*_setup.exe                      # 变体命名
+
+# ===== 系统垃圾文件 =====
+Thumbs.db                        # Windows 缩略图缓存
+.DS_Store                        # macOS 目录属性文件
+nul                              # 重定向产生的空文件
+$null                            # PowerShell 重定向产生的空文件
+~$*                              # Office 临时锁文件
+*.log                            # 日志文件

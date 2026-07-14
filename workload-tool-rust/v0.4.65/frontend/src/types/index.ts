@@ -86,6 +86,7 @@ export interface WorkRecord {
   sampler?: string;
   sampled_at?: string;
   notes?: string;
+  high_item?: string | null;
 }
 
 export interface SampleRecord {

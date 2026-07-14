@@ -515,6 +515,7 @@ const ManagePage: React.FC = () => {
       is_active: project.is_active,
       lab_ids: project.lab_ids,
       method_ids: project.method_ids,
+      high_item: project.high_item,
     };
     if (project.id > 0) {
       const r = await updateProject(project.id, body);

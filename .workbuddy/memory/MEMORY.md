@@ -122,3 +122,27 @@ project-root/
 - **前台执行**：所有编译、打包、构建操作必须在**前台执行**（不带 run_in_background），确保用户能看到实时进度
 - **分批输出**：长时间操作（如 cargo build）可接受分批 wait，但绝不能后台隐藏进度
 - **只做被要求的活**：严格按用户字面指令执行，不自行添加额外功能/优化/猜测意图。用户没说的不做
+
+## ⚠️ CHANGELOG 失真教训（2026-07-14 血的教训）
+- **绝不容许**：CHANGELOG 写"修了 X"，但 git diff 实证显示未改 X
+- **铁律**：每次改完版本必须用 `md5sum` 或 `git diff` 验证代码是否真的变了
+- **案例**：v0.4.59 CHANGELOG 声称"用 useRef 修闭包陈旧"，但 SampleInfoEntry.tsx 与 v0.4.58 MD5 完全一致（`672e8f94…`）——前端零改动
+- **后果**：用户得不到真实修复 → 反复报"还不行" → 越改越乱 → 失去信任
+- **正确做法**：CHANGELOG 应当基于 `git diff --stat` 自动生成，或写完后用 diff 自检
+- 配套规则：**改代码前先复现问题**，不要在没复现的情况下瞎改
+
+## 附件上传相关历史（样品信息登记）
+- v0.4.27-A：引入附件功能（保存后上传）
+- v0.4.54：附件按钮改为禁用"保存后上传"
+- v0.4.55：禁用按钮恢复视觉
+- v0.4.58：改为真实多文件input + useRef 暂存（关键修改）
+- v0.4.59：仅修后端MIME白名单(octet-stream + x-pdf)，前端零改动
+- v0.4.58/59 共有真实BUG：renderCellInput第411-415行删除按钮调用`updateRow(idx,'_pendingFiles',...)`写到state,但显示和提交都从`pendingFilesRef`读 → **删除按钮无效**
+- v0.4.60: 修复该BUG（onClick改为直接修改pendingFilesRef.current）
+
+## 工程师 subagent 不可用应急方案（2026-07-14）
+- 当 software-engineer subagent 启动后0秒失败（`Task agent software-engineer is not available`），属WorkBuddy环境基础设施故障
+- 应急：主理人亲自动手（复制v0.4.x→v0.4.x+1、改版本号、修bug、编译、打包、推送），必须明确告知用户原因
+- 每次改动后用 md5sum 自检，避免重蹈 v0.4.59 CHANGELOG 失真覆辙
+- 完整执行流：复制文件夹 → sed 改版本号(Cargo.toml/package.json/build_installer.iss) → Edit改源码 → md5sum自检 → cargo build --release → cp dist → npm run build → ISCC → git add (仅当前版本目录) → commit → tag → push main + push tag → CI自动Docker构建
+- Docker 镜像namespace: `ghcr.io/hotll233/tj/workload-tool`（主）+ `ghcr.io/hotll233/workload-tool`（best-effort）

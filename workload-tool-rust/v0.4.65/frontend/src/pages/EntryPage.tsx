@@ -247,6 +247,7 @@ const EntryPage: React.FC = () => {
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>类型</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>仪器</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>数量</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>高项</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -266,6 +267,7 @@ const EntryPage: React.FC = () => {
                     ) : '-'}
                   </TableCell>
                   <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{rec.quantity}</TableCell>
+                  <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{rec.high_item || '-'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
