@@ -762,6 +762,7 @@ const StatsPage: React.FC = () => {
                               实验室
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>项目</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>高项</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>方法</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>类型</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>仪器</TableCell>
@@ -777,7 +778,7 @@ const StatsPage: React.FC = () => {
                         <TableBody>
                           {ul.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={11} align="center">
+                              <TableCell colSpan={12} align="center">
                                 暂无数据
                               </TableCell>
                             </TableRow>
@@ -796,6 +797,7 @@ const StatsPage: React.FC = () => {
                                     "-"}
                                 </TableCell>
                                 <TableCell sx={{ whiteSpace: "nowrap" }}>{r.project_name}</TableCell>
+                                <TableCell sx={{ whiteSpace: "nowrap" }}>{(r as any).high_item || '-'}</TableCell>
                                 <TableCell sx={{ whiteSpace: "nowrap" }}>{r.method_name || "-"}</TableCell>
                                 <TableCell sx={{ whiteSpace: "nowrap" }}>{r.method_type || "-"}</TableCell>
                                 <TableCell sx={{ whiteSpace: "nowrap" }}>
