@@ -696,6 +696,7 @@ const SampleEntryPage: React.FC = () => {
                       {field.label}
                     </TableCell>
                   ))}
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap', minWidth: 70 }}>高项</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -706,6 +707,7 @@ const SampleEntryPage: React.FC = () => {
                     sx={{ '&:last-child td': { borderBottom: 0 }, cursor: 'pointer', '&.Mui-selected': { bgcolor: 'rgba(46,125,50,0.08)' } }}>
                     <TableCell sx={{ fontSize: '0.8rem', textAlign: 'center', width: tableConfig.seq_column_width }}>{recordsPage * pageSize + idx + 1}</TableCell>
                     {visibleLayoutFields.map(field => renderRecordCell(rec, field, idx))}
+                    <TableCell sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{(rec as any).high_item || '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
