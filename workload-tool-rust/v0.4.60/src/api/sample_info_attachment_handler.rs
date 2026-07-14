@@ -1,0 +1,194 @@
+use axum::{
+    extract::{Multipart, Path, State},
+    http::header,
+    response::IntoResponse,
+    Json, Router,
+};
+use crate::config::AppConfig;
+use crate::db::DbPool;
+use crate::error::{AppError, Result};
+use crate::models::sample_info_attachment::SampleInfoAttachment;
+use crate::models::ApiResponse;
+use crate::repo::sample_info_attachment_repo;
+use std::sync::Arc;
+
+pub fn router(pool: DbPool) -> Router {
+    let config = Arc::new(AppConfig::load());
+    Router::new()
+        .route(
+            "/api/sample-info/:id/attachments",
+            axum::routing::get(list_attachments).post(upload_attachment),
+        )
+        .route(
+            "/api/sample-info/attachments/batch",
+            axum::routing::get(batch_attachments),
+        )
+        .route(
+            "/api/sample-info/attachments/:att_id/file",
+            axum::routing::get(download_attachment),
+        )
+        .route(
+            "/api/sample-info/attachments/:att_id",
+            axum::routing::delete(delete_attachment),
+        )
+        .with_state((pool, config))
+}
+
+/// GET /api/sample-info/:id/attachments — 获取某条记录的所有附件
+async fn list_attachments(
+    State((pool, _config)): State<(DbPool, Arc<AppConfig>)>,
+    Path(record_id): Path<i64>,
+) -> Result<Json<ApiResponse<Vec<SampleInfoAttachment>>>> {
+    let items = sample_info_attachment_repo::list_by_record(&pool, record_id)?;
+    Ok(Json(ApiResponse::ok(items)))
+}
+
+/// POST /api/sample-info/:id/attachments — 上传附件（multipart, 限制 PDF/Word, max 10MB）
+async fn upload_attachment(
+    State((pool, config)): State<(DbPool, Arc<AppConfig>)>,
+    Path(record_id): Path<i64>,
+    mut multipart: Multipart,
+) -> Result<Json<ApiResponse<SampleInfoAttachment>>> {
+    const MAX_SIZE: usize = 10 * 1024 * 1024; // 10 MB
+    // v0.4.59: 用文件扩展名 + 常见 MIME 类型验证（更可靠）
+    let allowed_exts = ["pdf", "doc", "docx"];
+    let allowed_types = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/octet-stream", // 部分浏览器发送
+        "application/x-pdf",
+    ];
+
+    let mut file_name = String::new();
+    let mut file_type = String::new();
+    let mut file_data: Vec<u8> = Vec::new();
+
+    while let Some(field) = multipart.next_field().await.map_err(|e| AppError::Internal(format!("上传错误: {}", e)))? {
+        let name = field.name().unwrap_or("").to_string();
+        if name == "file" {
+            file_name = field.file_name().unwrap_or("unknown").to_string();
+            file_type = field.content_type().unwrap_or("application/octet-stream").to_string();
+
+            // v0.4.59: 用扩展名作为主要验证
+            let ext = std::path::Path::new(&file_name)
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("")
+                .to_lowercase();
+            if !allowed_exts.contains(&ext.as_str()) {
+                return Err(AppError::Validation(format!("仅支持 PDF、Word 文档（.pdf/.doc/.docx），当前文件扩展名: .{}", ext)));
+            }
+            // MIME 类型宽松检查（避免因浏览器/系统差异拒绝合法文件）
+            if !allowed_types.contains(&file_type.as_str())
+                && !file_type.is_empty()
+                && file_type != "application/octet-stream"
+            {
+                return Err(AppError::Validation(format!("不支持的 MIME 类型: {}", file_type)));
+            }
+
+            file_data = field.bytes().await.map_err(|e| AppError::Internal(format!("读取文件失败: {}", e)))?.to_vec();
+
+            if file_data.len() > MAX_SIZE {
+                return Err(AppError::Validation("文件大小不能超过 10MB".into()));
+            }
+        }
+    }
+
+    if file_data.is_empty() {
+        return Err(AppError::Validation("未选择文件".into()));
+    }
+
+    // v0.4.28: 生成唯一存储文件名 seq_{序号}_{ID}_{时间戳}_{原名}
+    let ext = std::path::Path::new(&file_name)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("bin");
+    let seq = sample_info_attachment_repo::next_seq_for_record(&pool, record_id)?;
+    let now = chrono::Local::now().format("%Y%m%d%H%M%S");
+    let stored_name = format!("seq_{}_{}_{}_{}.{}", seq, record_id, now, file_name, ext);
+
+    // 确保附件目录存在
+    let attachments_dir = config.attachments_dir();
+    std::fs::create_dir_all(&attachments_dir)
+        .map_err(|e| AppError::Internal(format!("创建附件目录失败: {}", e)))?;
+
+    // 写入文件
+    let file_path = attachments_dir.join(&stored_name);
+    std::fs::write(&file_path, &file_data)
+        .map_err(|e| AppError::Internal(format!("保存文件失败: {}", e)))?;
+
+    let file_size = file_data.len() as i64;
+    let att = sample_info_attachment_repo::create(
+        &pool, record_id, &file_name, &stored_name, file_size, &file_type,
+    )?;
+
+    Ok(Json(ApiResponse::ok(att)))
+}
+
+/// GET /api/sample-info/attachments/:att_id/file — 下载/预览附件
+async fn download_attachment(
+    State((pool, config)): State<(DbPool, Arc<AppConfig>)>,
+    Path(att_id): Path<i64>,
+) -> Result<impl IntoResponse> {
+    let att = sample_info_attachment_repo::find_by_id(&pool, att_id)?;
+    let file_path = config.attachments_dir().join(&att.stored_name);
+
+    let bytes = tokio::fs::read(&file_path).await
+        .map_err(|e| AppError::NotFound(format!("附件文件不存在: {}", e)))?;
+
+    // PDF → 浏览器直接预览；其他 → 触发下载
+    let ct = if att.file_type == "application/pdf" {
+        "application/pdf".to_string()
+    } else {
+        "application/octet-stream".to_string()
+    };
+
+    let disposition = format!("attachment; filename=\"{}\"", att.file_name);
+
+    Ok((
+        [
+            (header::CONTENT_TYPE, ct),
+            (header::CONTENT_DISPOSITION, disposition),
+        ],
+        bytes,
+    ))
+}
+
+/// DELETE /api/sample-info/attachments/:att_id — 删除附件
+async fn delete_attachment(
+    State((pool, config)): State<(DbPool, Arc<AppConfig>)>,
+    Path(att_id): Path<i64>,
+) -> Result<Json<ApiResponse<()>>> {
+    let att = sample_info_attachment_repo::delete(&pool, att_id, "system")?;
+
+    // 删除物理文件（忽略错误，文件可能已被删除）
+    let file_path = config.attachments_dir().join(&att.stored_name);
+    let _ = std::fs::remove_file(&file_path);
+
+    Ok(Json(ApiResponse::ok_msg("删除成功")))
+}
+
+/// GET /api/sample-info/attachments/batch?record_ids=1,2,3 — 批量获取附件
+/// 返回 { [record_id]: SampleInfoAttachment[] }
+async fn batch_attachments(
+    State((pool, _config)): State<(DbPool, Arc<AppConfig>)>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<ApiResponse<std::collections::HashMap<i64, Vec<SampleInfoAttachment>>>>> {
+    let ids_str = params.get("record_ids").cloned().unwrap_or_default();
+    if ids_str.is_empty() {
+        return Ok(Json(ApiResponse::ok(std::collections::HashMap::new())));
+    }
+    let record_ids: Vec<i64> = ids_str
+        .split(',')
+        .filter_map(|s| s.trim().parse::<i64>().ok())
+        .collect();
+
+    let mut result = std::collections::HashMap::new();
+    for rid in record_ids {
+        if let Ok(atts) = sample_info_attachment_repo::list_by_record(&pool, rid) {
+            result.insert(rid, atts);
+        }
+    }
+    Ok(Json(ApiResponse::ok(result)))
+}
