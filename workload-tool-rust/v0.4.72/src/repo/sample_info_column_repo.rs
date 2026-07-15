@@ -53,10 +53,8 @@ pub fn list_active_by_type(pool: &DbPool, type_key: &str) -> Result<Vec<SampleIn
         LEFT JOIN sample_info_column_visibility v ON v.column_id = c.id AND v.type_key = ?1
         WHERE c.is_active = 1
           AND (
-            -- 列在 visibility 表中明确可见
             v.is_visible = 1
-            -- OR 列未设置 visibility（无记录=全部可见）
-            OR v.column_id IS NULL
+            OR NOT EXISTS (SELECT 1 FROM sample_info_column_visibility WHERE column_id = c.id)
           )
         ORDER BY c.sort_order ASC
     ";
