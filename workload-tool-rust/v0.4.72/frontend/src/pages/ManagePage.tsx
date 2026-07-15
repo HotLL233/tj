@@ -32,7 +32,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PeopleIcon from '@mui/icons-material/People';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { getGroups, createGroup, updateGroup, deleteGroup, getProjects, createProject, updateProject, deleteProject, getRecords, restoreRecord, getAuditLogs, batchProjectCoefficient, getBackupStatus, backupNow, getBackupConfig, updateBackupConfig, deleteBackup, restoreBackup, restoreBackupFile, getMethodTypes, createMethodType, updateMethodType, deleteMethodType, getMethods, createMethod, updateMethod, deleteMethod, methodImport, getImportMappings, getHelpDocuments, uploadHelpDocument, updateHelpDocument, deleteHelpDocument, getHelpDocumentFileUrl, getHelpArticles, deleteHelpArticle, updateHelpArticle, getSampleInfoTypesAll, getSampleInfoRecords, updateSampleInfo, deleteSampleInfo, getSampleInfoTypes, getSampleInfoStats, createSampleInfoType, updateSampleInfoType, deleteSampleInfoType, deleteSampleInfoTypePermanent, exportSampleInfo, getDivisions, createDivision, updateDivision, deleteDivision, setDivisionLabs, getSampleInfoColumns, createSampleInfoColumn, updateSampleInfoColumn, deleteSampleInfoColumn, reorderSampleInfoColumns, userList, userRegister, updateUser, deleteUser, deleteUserPermanent, getRoles, updateSetting, importUsers } from '../api/client';
+import { getGroups, createGroup, updateGroup, deleteGroup, getProjects, createProject, updateProject, deleteProject, getRecords, restoreRecord, getAuditLogs, batchProjectCoefficient, getBackupStatus, backupNow, getBackupConfig, updateBackupConfig, deleteBackup, restoreBackup, restoreBackupFile, getMethodTypes, createMethodType, updateMethodType, deleteMethodType, getMethods, createMethod, updateMethod, deleteMethod, methodImport, getImportMappings, getHelpDocuments, uploadHelpDocument, updateHelpDocument, deleteHelpDocument, getHelpDocumentFileUrl, getHelpArticles, deleteHelpArticle, updateHelpArticle, getSampleInfoTypesAll, getSampleInfoRecords, updateSampleInfo, deleteSampleInfo, getSampleInfoTypes, getSampleInfoStats, createSampleInfoType, updateSampleInfoType, deleteSampleInfoType, deleteSampleInfoTypePermanent, exportSampleInfo, getDivisions, createDivision, updateDivision, deleteDivision, setDivisionLabs, getSampleInfoColumns, createSampleInfoColumn, updateSampleInfoColumn, deleteSampleInfoColumn, reorderSampleInfoColumns, updateSampleInfoColumnTypes, userList, userRegister, updateUser, deleteUser, deleteUserPermanent, getRoles, updateSetting, importUsers } from '../api/client';
 import type { ProjectGroup, Project, WorkRecord, AuditLog, BackupStatus, MethodType, Method, ImportMapping, HelpDocument, HelpArticle, SampleInfoType, SampleInfoRecord, Division, SampleInfoColumn, User, UserUpdate, Role, RoleWithPermissions, SystemSetting, HomeCard, StatCard, ManageTab } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
 import InlineEditCard from '../components/InlineEditCard';
@@ -1547,14 +1547,14 @@ const ManagePage: React.FC = () => {
             onClick={async () => {
               if (visibleTypesColId === null) return;
               try {
-                await fetch('/api/sample-info/columns/' + visibleTypesColId + '/types', {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ type_keys: visibleTypesSelected }),
-                });
-                setSiColumns(prev => prev.map(c => c.id === visibleTypesColId ? { ...c, visible_types: visibleTypesSelected } : c));
-                setVisibleTypesAnchorEl(null);
-                sm('显示类型更新成功');
+                const r = await updateSampleInfoColumnTypes(visibleTypesColId, visibleTypesSelected);
+                if (r.code === 0) {
+                  setSiColumns(prev => prev.map(c => c.id === visibleTypesColId ? { ...c, visible_types: visibleTypesSelected } : c));
+                  setVisibleTypesAnchorEl(null);
+                  sm('显示类型更新成功');
+                } else {
+                  sm(r.message || '更新失败', true);
+                }
               } catch (e: any) {
                 sm(e.message || '更新失败', true);
               }

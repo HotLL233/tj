@@ -480,6 +480,9 @@ export const getSampleInfoColumnsManage = (typeKey: string): Promise<ApiResponse
 export const updateSampleInfoColumnVisibility = (data: { type_key: string; items: ColumnVisibilityItem[] }): Promise<ApiResponse<null>> =>
   client.put('/sample-info/columns/visibility', data).then(r => r.data);
 
+export const updateSampleInfoColumnTypes = (id: number, typeKeys: string[]): Promise<ApiResponse<SampleInfoColumn>> =>
+  client.put('/sample-info/columns/' + id + '/types', { type_keys: typeKeys }).then(r => r.data);
+
 export const createSampleInfoColumn = (data: {
   field_key: string;
   label: string;
