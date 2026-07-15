@@ -37,7 +37,7 @@ pub fn list(
                  FROM method_type_links mtl
                  JOIN method_types mt ON mtl.method_type_id = mt.id
                  WHERE mtl.method_id = wr.method_id) AS method_type,
-                p.high_item AS high_item
+                COALESCE(wr.high_item, p.high_item) AS high_item
          FROM work_records wr
          JOIN projects p ON wr.project_id = p.id
          LEFT JOIN methods m ON wr.method_id = m.id
@@ -87,7 +87,7 @@ fn get_by_id_on_conn(conn: &rusqlite::Connection, id: i64) -> Result<RecordRespo
                  FROM method_type_links mtl
                  JOIN method_types mt ON mtl.method_type_id = mt.id
                  WHERE mtl.method_id = wr.method_id) AS method_type,
-                p.high_item AS high_item
+                COALESCE(wr.high_item, p.high_item) AS high_item
          FROM work_records wr
          JOIN projects p ON wr.project_id = p.id
          LEFT JOIN methods m ON wr.method_id = m.id
