@@ -25,7 +25,7 @@ pub fn update_record(pool: &DbPool, id: i64, input: &RecordUpdate, user_name: &s
     let qty_changed = input.quantity.map_or(true, |q| q == old.quantity);
     let dt_changed = input.recorded_at.as_ref().map_or(true, |d| d == &old.recorded_at);
     let mul_changed = input.multiplier.map_or(true, |m| (m - old.multiplier).abs() < f64::EPSILON);
-    let hi_changed = input.high_item.as_ref().map_or(true, |h| Some(h.as_str()) != old.high_item.as_deref());
+    let hi_changed = input.high_item.as_ref().map_or(true, |h| Some(h.as_str()) == old.high_item.as_deref());
     if un_changed && qty_changed && dt_changed && mul_changed && hi_changed {
         return Err(AppError::Validation("没有需要更新的字段".into()));
     }
