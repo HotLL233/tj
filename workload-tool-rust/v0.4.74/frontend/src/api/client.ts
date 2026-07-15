@@ -422,6 +422,12 @@ export const deleteHelpArticle = (id: number): Promise<ApiResponse<null>> =>
 export const updateHelpArticle = (id: number, data: { title?: string; content_html?: string; is_visible?: boolean; sort_order?: number }): Promise<ApiResponse<HelpArticle>> =>
   client.put(`/help-articles/${id}`, data).then(r => r.data);
 
+export const reorderHelpDocuments = (ids: { id: number; sort_order: number }[]): Promise<ApiResponse<null>> =>
+  client.put('/help-documents/sort', { ids }).then(r => r.data);
+
+export const reorderHelpArticles = (ids: { id: number; sort_order: number }[]): Promise<ApiResponse<null>> =>
+  client.put('/help-articles/sort', { ids }).then(r => r.data);
+
 // ========== v0.4.22: 样品信息登记 API ==========
 
 export const getSampleInfoRecords = (params?: { detection_type?: string; type_key?: string; status?: string; user_name?: string; lab_name?: string; project_name?: string; start?: string; end?: string; page?: number; page_size?: number }): Promise<ApiResponse<PaginatedResponse<SampleInfoRecord>>> =>
@@ -539,7 +545,7 @@ export const batchGetSampleInfoAttachments = (recordIds: number[]): Promise<ApiR
 };
 
 // ========== v0.4.27-A: 用户 API ==========
-export const userRegister = (data: { username: string; password: string; division_id?: number | null; group_id?: number | null; role_id?: number | null }): Promise<ApiResponse<User>> =>
+export const userRegister = (data: { username: string; password: string; division_id?: number | null; group_id?: number | null; role_ids?: number[] }): Promise<ApiResponse<User>> =>
   client.post('/users/register', data).then(r => r.data);
 
 export const userLogin = (data: LoginRequest): Promise<ApiResponse<LoginResponse>> =>

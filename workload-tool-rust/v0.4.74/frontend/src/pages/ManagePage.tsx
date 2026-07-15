@@ -32,7 +32,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PeopleIcon from '@mui/icons-material/People';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { getGroups, createGroup, updateGroup, deleteGroup, getProjects, createProject, updateProject, deleteProject, getRecords, restoreRecord, getAuditLogs, batchProjectCoefficient, getBackupStatus, backupNow, getBackupConfig, updateBackupConfig, deleteBackup, restoreBackup, restoreBackupFile, getMethodTypes, createMethodType, updateMethodType, deleteMethodType, getMethods, createMethod, updateMethod, deleteMethod, methodImport, getImportMappings, getHelpDocuments, uploadHelpDocument, updateHelpDocument, deleteHelpDocument, getHelpDocumentFileUrl, getHelpArticles, deleteHelpArticle, updateHelpArticle, getSampleInfoTypesAll, getSampleInfoRecords, updateSampleInfo, deleteSampleInfo, getSampleInfoTypes, getSampleInfoStats, createSampleInfoType, updateSampleInfoType, deleteSampleInfoType, deleteSampleInfoTypePermanent, exportSampleInfo, getDivisions, createDivision, updateDivision, deleteDivision, setDivisionLabs, getSampleInfoColumns, createSampleInfoColumn, updateSampleInfoColumn, deleteSampleInfoColumn, reorderSampleInfoColumns, updateSampleInfoColumnTypes, userList, userRegister, updateUser, deleteUser, deleteUserPermanent, getRoles, updateSetting, importUsers } from '../api/client';
+import { getGroups, createGroup, updateGroup, deleteGroup, getProjects, createProject, updateProject, deleteProject, getRecords, restoreRecord, getAuditLogs, batchProjectCoefficient, getBackupStatus, backupNow, getBackupConfig, updateBackupConfig, deleteBackup, restoreBackup, restoreBackupFile, getMethodTypes, createMethodType, updateMethodType, deleteMethodType, getMethods, createMethod, updateMethod, deleteMethod, methodImport, getImportMappings, getHelpDocuments, uploadHelpDocument, updateHelpDocument, deleteHelpDocument, getHelpDocumentFileUrl, getHelpArticles, deleteHelpArticle, updateHelpArticle, getSampleInfoTypesAll, getSampleInfoRecords, updateSampleInfo, deleteSampleInfo, getSampleInfoTypes, getSampleInfoStats, createSampleInfoType, updateSampleInfoType, deleteSampleInfoType, deleteSampleInfoTypePermanent, exportSampleInfo, getDivisions, createDivision, updateDivision, deleteDivision, setDivisionLabs, getSampleInfoColumns, createSampleInfoColumn, updateSampleInfoColumn, deleteSampleInfoColumn, reorderSampleInfoColumns, updateSampleInfoColumnTypes, userList, userRegister, updateUser, deleteUser, deleteUserPermanent, getRoles, updateSetting, importUsers, reorderHelpDocuments, reorderHelpArticles } from '../api/client';
 import type { ProjectGroup, Project, WorkRecord, AuditLog, BackupStatus, MethodType, Method, ImportMapping, HelpDocument, HelpArticle, SampleInfoType, SampleInfoRecord, Division, SampleInfoColumn, User, UserUpdate, Role, RoleWithPermissions, SystemSetting, HomeCard, StatCard, ManageTab } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
 import InlineEditCard from '../components/InlineEditCard';
@@ -214,6 +214,8 @@ const ManagePage: React.FC = () => {
   const [helpFile, setHelpFile] = useState<File | null>(null);
   const [helpEditId, setHelpEditId] = useState<number | null>(null);
   const [helpEditTitle, setHelpEditTitle] = useState('');
+  const [docSortMode, setDocSortMode] = useState(false);
+  const [articleSortMode, setArticleSortMode] = useState(false);
   const loadHelpDocs = async () => { try { const r = await getHelpDocuments(false); if (r.code === 0 && r.data) setHelpDocs(r.data); } catch {} };
 
   // help articles
@@ -307,7 +309,7 @@ const ManagePage: React.FC = () => {
   const [userEditItem, setUserEditItem] = useState<User | null>(null);
   const [userForm, setUserForm] = useState({
     username: '', password: '', division_id: null as number | null,
-    group_id: null as number | null, role_id: null as number | null,
+    group_id: null as number | null, role_ids: [] as number[],
     is_admin: false, is_active: true,
   });
   const loadUsers = useCallback(async () => {
@@ -321,12 +323,12 @@ const ManagePage: React.FC = () => {
     if (!userEditItem && !userForm.password.trim()) { sm('新用户必须设置密码', true); return; }
     try {
       if (userEditItem) {
-        const body: UserUpdate = { username: userForm.username, division_id: userForm.division_id, group_id: userForm.group_id, role_id: userForm.role_id, is_admin: userForm.is_admin, is_active: userForm.is_active };
+        const body: UserUpdate = { username: userForm.username, division_id: userForm.division_id, group_id: userForm.group_id, role_ids: userForm.role_ids, is_admin: userForm.is_admin, is_active: userForm.is_active };
         if (userForm.password.trim()) body.password = userForm.password;
         await updateUser(userEditItem.id, body);
         sm('用户更新成功');
       } else {
-        await userRegister({ username: userForm.username, password: userForm.password, division_id: userForm.division_id, group_id: userForm.group_id, role_id: userForm.role_id });
+        await userRegister({ username: userForm.username, password: userForm.password, division_id: userForm.division_id, group_id: userForm.group_id, role_ids: userForm.role_ids });
         sm('用户创建成功');
       }
       setUserEditOpen(false);
@@ -961,7 +963,7 @@ const ManagePage: React.FC = () => {
       {trashTab === 'users' && (trUsers.length === 0 ? <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>回收站为空</Typography>
         : <TableContainer component={Paper} className="table-responsive" sx={tSx}><Table size="small"><TableHead><TableRow>
           <TableCell sx={{ fontWeight: 600 }}>ID</TableCell><TableCell sx={{ fontWeight: 600 }}>用户名</TableCell><TableCell sx={{ fontWeight: 600 }}>角色</TableCell><TableCell sx={{ fontWeight: 600 }}>部门</TableCell><TableCell sx={{ fontWeight: 600 }}>实验室</TableCell><TableCell align="right" sx={{ fontWeight: 600 }}>操作</TableCell>
-        </TableRow></TableHead><TableBody>{trUsers.map(u => <TableRow key={u.id} hover><TableCell>{u.id}</TableCell><TableCell>{u.username}</TableCell><TableCell>{u.role_id || '-'}</TableCell><TableCell>{u.division_name || '-'}</TableCell><TableCell>{u.group_name || '-'}</TableCell><TableCell align="right"><Button size="small" color="success" onClick={async () => { try { const res = await updateUser(u.id, { is_active: true }); if (res.code === 0) { sm('恢复成功'); loadTrash(); } else sm(res.message, true); } catch { sm('恢复失败', true); } }} sx={{ borderRadius: R, mr: 0.5 }}>恢复</Button><Button size="small" color="error" onClick={async () => { if (!window.confirm('确认彻底删除此用户？')) return; try { await deleteUserPermanent(u.id); sm('已彻底删除'); loadTrash(); } catch { sm('删除失败', true); } }} sx={{ borderRadius: R }}>彻底删除</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>)}
+        </TableRow></TableHead><TableBody>{trUsers.map(u => <TableRow key={u.id} hover><TableCell>{u.id}</TableCell><TableCell>{u.username}</TableCell><TableCell>{u.role_ids ? u.role_ids.map(id => roles.find(r => r.id === id)?.name || `#${id}`).join('、') : u.role_id || '-'}</TableCell><TableCell>{u.division_name || '-'}</TableCell><TableCell>{u.group_name || '-'}</TableCell><TableCell align="right"><Button size="small" color="success" onClick={async () => { try { const res = await updateUser(u.id, { is_active: true }); if (res.code === 0) { sm('恢复成功'); loadTrash(); } else sm(res.message, true); } catch { sm('恢复失败', true); } }} sx={{ borderRadius: R, mr: 0.5 }}>恢复</Button><Button size="small" color="error" onClick={async () => { if (!window.confirm('确认彻底删除此用户？')) return; try { await deleteUserPermanent(u.id); sm('已彻底删除'); loadTrash(); } catch { sm('删除失败', true); } }} sx={{ borderRadius: R }}>彻底删除</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>)}
     </Box>}
 
     {/* ── 审计日志 ── */}
@@ -1049,9 +1051,32 @@ const ManagePage: React.FC = () => {
       </Paper>
 
       {/* 文档列表 */}
-      <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
-        文档列表 · 共 {helpDocs.length} 篇
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+        <Typography variant="subtitle2" fontWeight={700}>
+          文档列表 · 共 {helpDocs.length} 篇
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {docSortMode && (
+            <Button size="small" variant="contained" color="success"
+              onClick={async () => {
+                const ids = helpDocs.map((doc, i) => ({ id: doc.id, sort_order: i }));
+                try {
+                  const r = await reorderHelpDocuments(ids);
+                  if (r.code === 0) { sm('排序保存成功'); setDocSortMode(false); loadHelpDocs(); }
+                  else sm(r.message, true);
+                } catch { sm('排序保存失败', true); }
+              }}
+              sx={{ borderRadius: R, fontSize: '0.75rem', py: 0 }}>
+              保存排序
+            </Button>
+          )}
+          <Button size="small" variant={docSortMode ? 'contained' : 'outlined'}
+            onClick={() => { setDocSortMode(!docSortMode); setArticleSortMode(false); }}
+            sx={{ borderRadius: R, fontSize: '0.75rem', py: 0 }}>
+            {docSortMode ? '退出排序' : '排序'}
+          </Button>
+        </Box>
+      </Box>
       {helpDocs.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>暂无文档</Typography>
       ) : (
@@ -1067,7 +1092,7 @@ const ManagePage: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {helpDocs.map(doc => (
+              {helpDocs.map((doc, index) => (
                 <TableRow key={doc.id} hover>
                   <TableCell sx={{ maxWidth: 280 }}>
                     {helpEditId === doc.id ? (
@@ -1123,26 +1148,47 @@ const ManagePage: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => { setHelpEditId(doc.id); setHelpEditTitle(doc.title); }}
-                        sx={{ color: '#f4511e' }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={() => {
-                        setCa(() => async () => {
-                          const r = await deleteHelpDocument(doc.id);
-                          if (r.code === 0) { sm('删除成功'); loadHelpDocs(); }
-                          else sm(r.message, true);
-                          setCo(false);
-                        });
-                        setCo(true);
-                      }}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
+                    {docSortMode ? (
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                        <IconButton size="small" disabled={index === 0}
+                          onClick={() => {
+                            const a = [...helpDocs];
+                            [a[index - 1], a[index]] = [a[index], a[index - 1]];
+                            setHelpDocs(a);
+                          }}>
+                          ▲
+                        </IconButton>
+                        <IconButton size="small" disabled={index === helpDocs.length - 1}
+                          onClick={() => {
+                            const a = [...helpDocs];
+                            [a[index + 1], a[index]] = [a[index], a[index + 1]];
+                            setHelpDocs(a);
+                          }}>
+                          ▼
+                        </IconButton>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => { setHelpEditId(doc.id); setHelpEditTitle(doc.title); }}
+                          sx={{ color: '#f4511e' }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error" onClick={() => {
+                          setCa(() => async () => {
+                            const r = await deleteHelpDocument(doc.id);
+                            if (r.code === 0) { sm('删除成功'); loadHelpDocs(); }
+                            else sm(r.message, true);
+                            setCo(false);
+                          });
+                          setCo(true);
+                        }}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -1151,9 +1197,32 @@ const ManagePage: React.FC = () => {
         </TableContainer>
       )}
       {/* 文章列表 */}
-      <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, mt: 4 }}>
-        文章列表 · 共 {helpArticles.length} 篇
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, mt: 4 }}>
+        <Typography variant="subtitle2" fontWeight={700}>
+          文章列表 · 共 {helpArticles.length} 篇
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {articleSortMode && (
+            <Button size="small" variant="contained" color="success"
+              onClick={async () => {
+                const ids = helpArticles.map((article, i) => ({ id: article.id, sort_order: i }));
+                try {
+                  const r = await reorderHelpArticles(ids);
+                  if (r.code === 0) { sm('排序保存成功'); setArticleSortMode(false); loadHelpArticles(); }
+                  else sm(r.message, true);
+                } catch { sm('排序保存失败', true); }
+              }}
+              sx={{ borderRadius: R, fontSize: '0.75rem', py: 0 }}>
+              保存排序
+            </Button>
+          )}
+          <Button size="small" variant={articleSortMode ? 'contained' : 'outlined'}
+            onClick={() => { setArticleSortMode(!articleSortMode); setDocSortMode(false); }}
+            sx={{ borderRadius: R, fontSize: '0.75rem', py: 0 }}>
+            {articleSortMode ? '退出排序' : '排序'}
+          </Button>
+        </Box>
+      </Box>
       {helpArticles.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>暂无文章（上传 Word/PDF 后自动生成）</Typography>
       ) : (
@@ -1169,7 +1238,7 @@ const ManagePage: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {helpArticles.map(article => (
+              {helpArticles.map((article, index) => (
                 <TableRow key={article.id} hover>
                   <TableCell sx={{ maxWidth: 280 }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>{article.title}</Typography>
@@ -1202,17 +1271,38 @@ const ManagePage: React.FC = () => {
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" color="error" onClick={() => {
-                      setCa(() => async () => {
-                        const r = await deleteHelpArticle(article.id);
-                        if (r.code === 0) { sm('删除成功'); loadHelpArticles(); }
-                        else sm(r.message, true);
-                        setCo(false);
-                      });
-                      setCo(true);
-                    }}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    {articleSortMode ? (
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                        <IconButton size="small" disabled={index === 0}
+                          onClick={() => {
+                            const a = [...helpArticles];
+                            [a[index - 1], a[index]] = [a[index], a[index - 1]];
+                            setHelpArticles(a);
+                          }}>
+                          ▲
+                        </IconButton>
+                        <IconButton size="small" disabled={index === helpArticles.length - 1}
+                          onClick={() => {
+                            const a = [...helpArticles];
+                            [a[index + 1], a[index]] = [a[index], a[index + 1]];
+                            setHelpArticles(a);
+                          }}>
+                          ▼
+                        </IconButton>
+                      </Box>
+                    ) : (
+                      <IconButton size="small" color="error" onClick={() => {
+                        setCa(() => async () => {
+                          const r = await deleteHelpArticle(article.id);
+                          if (r.code === 0) { sm('删除成功'); loadHelpArticles(); }
+                          else sm(r.message, true);
+                          setCo(false);
+                        });
+                        setCo(true);
+                      }}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -1835,7 +1925,7 @@ const ManagePage: React.FC = () => {
         <Button variant="contained" size="small" startIcon={<AddIcon />}
           onClick={() => {
             setUserEditItem(null);
-            setUserForm({ username: '', password: '', division_id: null, group_id: null, role_id: null, is_admin: false, is_active: true });
+            setUserForm({ username: '', password: '', division_id: null, group_id: null, role_ids: [], is_admin: false, is_active: true });
             setUserEditOpen(true);
           }}
           sx={{ borderRadius: R, bgcolor: '#f4511e', '&:hover': { bgcolor: '#e64a19' } }}>
@@ -1864,7 +1954,7 @@ const ManagePage: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600 }}>{u.username}</TableCell>
                 <TableCell>{u.division_name || '未分配'}</TableCell>
                 <TableCell>{u.group_name || '未分配'}</TableCell>
-                <TableCell>{roleNameOf(u.role_id)}</TableCell>
+                <TableCell>{(u.role_ids || []).map(id => roles.find(r => r.id === id)?.name || `#${id}`).join('、') || '-'}</TableCell>
                 <TableCell>
                   <Chip label={u.is_admin ? '管理员' : '普通用户'}
                     size="small" color={u.is_admin ? 'warning' : 'default'}
@@ -1883,7 +1973,7 @@ const ManagePage: React.FC = () => {
                       username: u.username, password: '',
                       division_id: u.division_id ?? null,
                       group_id: u.group_id ?? null,
-                      role_id: u.role_id ?? null,
+                      role_ids: ((u as any).role_ids || []),
                       is_admin: u.is_admin, is_active: u.is_active,
                     });
                     setUserEditOpen(true);
@@ -2549,14 +2639,33 @@ const ManagePage: React.FC = () => {
               {gs.map(g => <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>)}
             </Select>
           </FormControl>
-          <FormControl size="small">
-            <InputLabel>角色</InputLabel>
-            <Select value={userForm.role_id ?? ''} label="角色"
-              onChange={e => setUserForm(p => ({ ...p, role_id: e.target.value ? Number(e.target.value) : null }))}
-              sx={{ borderRadius: R }}>
-              <MenuItem value="">未分配</MenuItem>
-              {roles.map(r => <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>)}
-            </Select>
+          <FormControl size="small" fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: R } }}>
+            <Box sx={{ border: '1px solid rgba(0,0,0,0.23)', borderRadius: R, p: 1, mt: 1 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, ml: 0.5 }}>角色（可多选）</Typography>
+              <FormGroup row>
+                {roles.map(r => (
+                  <FormControlLabel
+                    key={r.id}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={userForm.role_ids.includes(r.id)}
+                        onChange={e => {
+                          setUserForm({
+                            ...userForm,
+                            role_ids: e.target.checked
+                              ? [...userForm.role_ids, r.id]
+                              : userForm.role_ids.filter(id => id !== r.id)
+                          });
+                        }}
+                      />
+                    }
+                    label={r.name}
+                    sx={{ mr: 1 }}
+                  />
+                ))}
+              </FormGroup>
+            </Box>
           </FormControl>
           <FormControlLabel
             control={<Switch checked={userForm.is_admin}

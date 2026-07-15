@@ -463,6 +463,8 @@ export interface User {
   is_active: boolean;
   /** 关联角色 id（NULL 表示未分配角色） */
   role_id?: number | null;
+  /** 多角色 id 集合 */
+  role_ids?: number[];
   /** 角色对应的权限点集合 */
   permissions?: string[];
   created_at: string;
@@ -504,7 +506,7 @@ export interface UserUpdate {
   group_id?: number | null;
   is_admin?: boolean;
   is_active?: boolean;
-  role_id?: number | null;
+  role_ids?: number[];
 }
 
 // v0.4.28: 事业部统计
