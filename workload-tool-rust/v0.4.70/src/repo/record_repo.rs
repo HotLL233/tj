@@ -188,7 +188,10 @@ pub fn update(pool: &DbPool, id: i64, body: &RecordUpdate, user_name: &str) -> R
         let hi_val = if hi.is_empty() { None::<&str> } else { Some(hi.as_str()) };
         let existing_val = existing.high_item.as_deref();
         if hi_val != existing_val { changes.push(format!("高项 {:?} → {:?}", existing.high_item, hi)); }
-        tx.execute("UPDATE work_records SET high_item=?1 WHERE id=?2", rusqlite::params![hi_val, id])?;
+        let rows = tx.execute("UPDATE work_records SET high_item=?1 WHERE id=?2", rusqlite::params![hi_val, id])?;
+        if rows == 0 {
+            return Err(crate::error::AppError::NotFound("记录不存在".into()));
+        }
         updated = true;
     }
     if !updated {
