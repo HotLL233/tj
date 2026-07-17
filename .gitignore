@@ -45,3 +45,6 @@ pdfium*.zip
 
 # WorkBuddy artifacts
 .workbuddy/artifacts/
+
+# Deliverables build cache (Rust target)
+deliverables/**/target/

@@ -1,0 +1,10 @@
+server_port = 8011
+db_dir = "data"
+log_level = "info"
+admin_user = "admin"
+admin_pass = "admin123"
+backup_enabled = false
+backup_interval_hours = 24
+max_backup_count = 10
+backup_mode = "full"
+backup_sync_dir = 'C:\Temp\workload-backup-sync-v0489'

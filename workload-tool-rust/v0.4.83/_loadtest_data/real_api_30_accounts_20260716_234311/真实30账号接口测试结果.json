@@ -1,0 +1,3381 @@
+{
+  "tested_at": "2026-07-16T23:43:28",
+  "version_folder": "D:\\桌面\\工作量统计工具项目\\workload-tool-rust\\v0.4.83",
+  "server_url": "http://127.0.0.1:18083",
+  "test_data_dir": "D:\\桌面\\工作量统计工具项目\\workload-tool-rust\\v0.4.83\\_loadtest_data\\real_api_30_accounts_20260716_234311",
+  "created_or_ensured": {
+    "departments": [
+      "真实测试-分析部",
+      "真实测试-研发部",
+      "真实测试-送样部"
+    ],
+    "laboratories": [
+      "真实测试-LC室",
+      "真实测试-GC室",
+      "真实测试-理化室",
+      "真实测试-制剂室",
+      "真实测试-留样室"
+    ],
+    "methods": 10,
+    "projects": 10,
+    "high_items": [
+      "真实测试-高项01",
+      "真实测试-高项02",
+      "真实测试-高项03",
+      "真实测试-高项04",
+      "真实测试-高项05",
+      "真实测试-高项06",
+      "真实测试-高项07",
+      "真实测试-高项08",
+      "真实测试-高项09",
+      "真实测试-高项10"
+    ],
+    "users": [
+      "realtest_analysis_01",
+      "realtest_analysis_02",
+      "realtest_analysis_03",
+      "realtest_analysis_04",
+      "realtest_analysis_05",
+      "realtest_analysis_06",
+      "realtest_analysis_07",
+      "realtest_analysis_08",
+      "realtest_analysis_09",
+      "realtest_analysis_10",
+      "realtest_rd_01",
+      "realtest_rd_02",
+      "realtest_rd_03",
+      "realtest_rd_04",
+      "realtest_rd_05",
+      "realtest_rd_06",
+      "realtest_rd_07",
+      "realtest_rd_08",
+      "realtest_rd_09",
+      "realtest_rd_10",
+      "realtest_sender_01",
+      "realtest_sender_02",
+      "realtest_sender_03",
+      "realtest_sender_04",
+      "realtest_sender_05",
+      "realtest_sender_06",
+      "realtest_sender_07",
+      "realtest_sender_08",
+      "realtest_sender_09",
+      "realtest_sender_10"
+    ]
+  },
+  "workflow_counts": {
+    "analysis_records_created": 50,
+    "rd_records_created": 50,
+    "sample_info_records_created": 30,
+    "rd_records_sampled": 20
+  },
+  "api_totals": {
+    "users_total": 31,
+    "analysis_records_total": 50,
+    "rd_records_total": 50,
+    "sample_info_total": 30
+  },
+  "stats_results": {
+    "admin_analysis_summary": {
+      "total_quantity": 300,
+      "total_records": 50,
+      "user_count": 10,
+      "project_count": 10,
+      "coefficient_score": 326.0,
+      "details": [
+        {
+          "period": "2026-07-16",
+          "total_quantity": 20,
+          "record_count": 10,
+          "coefficient_score": 20.0
+        },
+        {
+          "period": "2026-07-17",
+          "total_quantity": 40,
+          "record_count": 10,
+          "coefficient_score": 44.0
+        },
+        {
+          "period": "2026-07-18",
+          "total_quantity": 60,
+          "record_count": 10,
+          "coefficient_score": 72.0
+        },
+        {
+          "period": "2026-07-19",
+          "total_quantity": 80,
+          "record_count": 10,
+          "coefficient_score": 80.0
+        },
+        {
+          "period": "2026-07-20",
+          "total_quantity": 100,
+          "record_count": 10,
+          "coefficient_score": 110.0
+        }
+      ]
+    },
+    "admin_analysis_by_user": [
+      {
+        "user_name": "realtest_analysis_10",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_09",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_08",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_07",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_06",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_05",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_04",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_03",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_02",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      },
+      {
+        "user_name": "realtest_analysis_01",
+        "total_quantity": 30,
+        "record_count": 5,
+        "coefficient_score": 32.6
+      }
+    ],
+    "admin_rd_summary": {
+      "total_quantity": 150,
+      "total_records": 50,
+      "user_count": 10,
+      "project_count": 10,
+      "coefficient_score": 150.0,
+      "details": [
+        {
+          "period": "2026-07-16",
+          "total_quantity": 10,
+          "record_count": 10,
+          "coefficient_score": 10.0
+        },
+        {
+          "period": "2026-07-17",
+          "total_quantity": 20,
+          "record_count": 10,
+          "coefficient_score": 20.0
+        },
+        {
+          "period": "2026-07-18",
+          "total_quantity": 30,
+          "record_count": 10,
+          "coefficient_score": 30.0
+        },
+        {
+          "period": "2026-07-19",
+          "total_quantity": 40,
+          "record_count": 10,
+          "coefficient_score": 40.0
+        },
+        {
+          "period": "2026-07-20",
+          "total_quantity": 50,
+          "record_count": 10,
+          "coefficient_score": 50.0
+        }
+      ]
+    },
+    "admin_rd_by_user": [
+      {
+        "user_name": "realtest_rd_10",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_09",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_08",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_07",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_06",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_05",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_04",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_03",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_02",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      },
+      {
+        "user_name": "realtest_rd_01",
+        "total_quantity": 15,
+        "record_count": 5,
+        "coefficient_score": 15.0
+      }
+    ],
+    "sample_info_stats": {
+      "total": 30,
+      "by_status": [
+        {
+          "name": "待检测",
+          "count": 30
+        }
+      ],
+      "by_type": [
+        {
+          "type_key": "realtest",
+          "label": "液相/气相/理化",
+          "count": 30
+        }
+      ],
+      "by_lab": [
+        {
+          "name": "真实测试-留样室",
+          "count": 6
+        },
+        {
+          "name": "真实测试-理化室",
+          "count": 6
+        },
+        {
+          "name": "真实测试-制剂室",
+          "count": 6
+        },
+        {
+          "name": "真实测试-LC室",
+          "count": 6
+        },
+        {
+          "name": "真实测试-GC室",
+          "count": 6
+        }
+      ],
+      "by_project": [
+        {
+          "name": "真实测试-项目10",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目09",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目08",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目07",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目06",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目05",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目04",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目03",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目02",
+          "count": 3
+        },
+        {
+          "name": "真实测试-项目01",
+          "count": 3
+        }
+      ],
+      "by_user": [
+        {
+          "name": "realtest_sender_10",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_09",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_08",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_07",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_06",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_05",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_04",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_03",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_02",
+          "count": 3
+        },
+        {
+          "name": "realtest_sender_01",
+          "count": 3
+        }
+      ],
+      "by_month": [
+        {
+          "month": "2026-07",
+          "count": 30
+        }
+      ]
+    },
+    "analysis_user_scoped_summary": {
+      "total_quantity": 30,
+      "total_records": 5,
+      "user_count": 1,
+      "project_count": 5,
+      "coefficient_score": 32.6,
+      "details": [
+        {
+          "period": "2026-07-16",
+          "total_quantity": 2,
+          "record_count": 1,
+          "coefficient_score": 2.0
+        },
+        {
+          "period": "2026-07-17",
+          "total_quantity": 4,
+          "record_count": 1,
+          "coefficient_score": 4.4
+        },
+        {
+          "period": "2026-07-18",
+          "total_quantity": 6,
+          "record_count": 1,
+          "coefficient_score": 7.199999999999999
+        },
+        {
+          "period": "2026-07-19",
+          "total_quantity": 8,
+          "record_count": 1,
+          "coefficient_score": 8.0
+        },
+        {
+          "period": "2026-07-20",
+          "total_quantity": 10,
+          "record_count": 1,
+          "coefficient_score": 11.0
+        }
+      ]
+    },
+    "rd_user_scoped_summary": {
+      "total_quantity": 15,
+      "total_records": 5,
+      "user_count": 1,
+      "project_count": 5,
+      "coefficient_score": 15.0,
+      "details": [
+        {
+          "period": "2026-07-16",
+          "total_quantity": 1,
+          "record_count": 1,
+          "coefficient_score": 1.0
+        },
+        {
+          "period": "2026-07-17",
+          "total_quantity": 2,
+          "record_count": 1,
+          "coefficient_score": 2.0
+        },
+        {
+          "period": "2026-07-18",
+          "total_quantity": 3,
+          "record_count": 1,
+          "coefficient_score": 3.0
+        },
+        {
+          "period": "2026-07-19",
+          "total_quantity": 4,
+          "record_count": 1,
+          "coefficient_score": 4.0
+        },
+        {
+          "period": "2026-07-20",
+          "total_quantity": 5,
+          "record_count": 1,
+          "coefficient_score": 5.0
+        }
+      ]
+    }
+  },
+  "metrics": {
+    "total_calls": 320,
+    "success_calls": 320,
+    "failed_calls": 0,
+    "success_rate": 100.0,
+    "latency_min_ms": 0.77,
+    "latency_avg_ms": 49.61,
+    "latency_p95_ms": 210.09,
+    "latency_max_ms": 370.69,
+    "failures": []
+  },
+  "calls": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "ok": true,
+      "elapsed_ms": 16.06,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/roles",
+      "ok": true,
+      "elapsed_ms": 1.06,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/roles",
+      "ok": true,
+      "elapsed_ms": 25.43,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/roles",
+      "ok": true,
+      "elapsed_ms": 1.01,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/roles",
+      "ok": true,
+      "elapsed_ms": 31.41,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/roles",
+      "ok": true,
+      "elapsed_ms": 19.35,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/roles",
+      "ok": true,
+      "elapsed_ms": 26.61,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/divisions",
+      "ok": true,
+      "elapsed_ms": 21.23,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/divisions",
+      "ok": true,
+      "elapsed_ms": 21.23,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/divisions",
+      "ok": true,
+      "elapsed_ms": 26.15,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/divisions",
+      "ok": true,
+      "elapsed_ms": 20.58,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/divisions",
+      "ok": true,
+      "elapsed_ms": 10.89,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/divisions",
+      "ok": true,
+      "elapsed_ms": 23.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 24.36,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 14.44,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 17.84,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 11.05,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 20.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 9.8,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 1.1,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 27.52,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 0.98,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/groups",
+      "ok": true,
+      "elapsed_ms": 9.08,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/method-types",
+      "ok": true,
+      "elapsed_ms": 0.8,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/method-types",
+      "ok": true,
+      "elapsed_ms": 21.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/method-types",
+      "ok": true,
+      "elapsed_ms": 23.04,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/method-types",
+      "ok": true,
+      "elapsed_ms": 24.53,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/method-types",
+      "ok": true,
+      "elapsed_ms": 22.37,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/method-types",
+      "ok": true,
+      "elapsed_ms": 8.97,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 0.95,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 35.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 1.02,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 15.55,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 17.9,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 17.86,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 12.56,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 29.26,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 17.56,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 16.09,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 14.53,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 30.49,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 17.13,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 28.69,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 1.03,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 31.56,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 1.11,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 13.48,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 18.22,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/methods",
+      "ok": true,
+      "elapsed_ms": 14.03,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 1.65,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 42.89,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 0.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 30.04,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 1.21,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 29.21,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 0.94,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 46.57,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 0.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 29.96,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 20.31,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 26.99,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 20.02,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 40.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 22.7,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 27.63,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 19.81,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 45.73,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 18.05,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "ok": true,
+      "elapsed_ms": 47.29,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 15.48,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 179.05,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 181.05,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.1,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 185.96,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 203.6,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 181.96,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 183.03,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.54,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 195.64,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 189.18,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 13.22,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 195.77,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 198.27,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 18.68,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 233.93,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 230.91,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.43,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 195.01,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 237.35,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.18,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 236.13,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 274.11,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.6,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 190.45,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 230.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.73,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 197.15,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 191.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 26.38,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 189.35,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 187.08,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.02,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 183.6,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 188.39,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.73,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 190.4,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 183.96,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 16.24,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 211.59,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 194.81,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.31,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 201.44,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 215.33,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.71,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 193.57,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 243.55,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.9,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 192.86,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 255.93,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 2.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 189.1,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 214.54,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 15.35,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 298.58,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 208.91,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 12.82,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 194.51,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 183.41,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.33,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 182.01,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 200.19,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.43,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 193.25,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 208.73,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.02,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 182.23,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 180.46,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.31,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 184.39,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 202.37,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.08,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 183.64,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 196.77,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 2.16,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 203.25,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 210.09,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 19.8,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 226.07,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 370.69,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 23.89,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 216.29,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 203.64,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 23.36,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 232.27,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 188.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 2.19,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 194.96,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/login",
+      "ok": true,
+      "elapsed_ms": 207.69,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.14,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 21.0,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.23,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.87,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 23.53,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.46,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.01,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.82,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.95,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.05,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.51,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.9,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.93,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.93,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 5.06,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.95,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.62,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 25.63,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 28.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 16.04,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 6.01,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 7.55,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 18.73,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 28.93,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 6.32,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 24.71,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 29.84,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 15.71,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 16.54,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.57,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.31,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.75,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 17.09,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 13.95,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.44,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.9,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.14,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.0,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.87,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.86,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.31,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.9,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.9,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 3.78,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.04,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.72,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 15.38,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 4.32,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.23,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.72,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.73,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.61,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.57,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.94,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 25.15,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 29.28,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.72,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.25,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 30.01,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 32.12,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.85,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 21.34,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.37,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 21.67,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.73,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.41,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 29.04,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.11,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.65,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.78,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 7.98,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.82,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 7.34,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.1,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.54,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.42,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.45,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.36,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.94,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 18.84,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 29.53,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.25,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 11.11,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 27.54,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 32.63,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.99,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.35,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 9.92,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 10.24,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 28.51,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 31.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 10.02,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 21.55,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 32.67,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.94,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 20.9,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 8.37,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.8,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.1,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.03,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 7.49,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.16,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 25.72,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 7.89,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.23,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.19,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 7.94,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.02,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 7.42,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.21,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 7.46,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 7.89,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.1,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.89,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 18.6,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.09,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 7.51,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.33,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 7.79,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 30.77,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 9.47,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 20.86,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 8.75,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 9.96,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 9.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 9.48,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 24.27,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/1/sample",
+      "ok": true,
+      "elapsed_ms": 9.98,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/2/sample",
+      "ok": true,
+      "elapsed_ms": 8.2,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/3/sample",
+      "ok": true,
+      "elapsed_ms": 30.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/4/sample",
+      "ok": true,
+      "elapsed_ms": 9.53,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/5/sample",
+      "ok": true,
+      "elapsed_ms": 10.04,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/6/sample",
+      "ok": true,
+      "elapsed_ms": 24.38,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/7/sample",
+      "ok": true,
+      "elapsed_ms": 8.03,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/8/sample",
+      "ok": true,
+      "elapsed_ms": 9.54,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/9/sample",
+      "ok": true,
+      "elapsed_ms": 31.99,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/10/sample",
+      "ok": true,
+      "elapsed_ms": 8.78,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/11/sample",
+      "ok": true,
+      "elapsed_ms": 23.35,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/12/sample",
+      "ok": true,
+      "elapsed_ms": 9.45,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/13/sample",
+      "ok": true,
+      "elapsed_ms": 19.61,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/14/sample",
+      "ok": true,
+      "elapsed_ms": 31.37,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/15/sample",
+      "ok": true,
+      "elapsed_ms": 32.75,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/16/sample",
+      "ok": true,
+      "elapsed_ms": 29.32,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/17/sample",
+      "ok": true,
+      "elapsed_ms": 7.4,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/18/sample",
+      "ok": true,
+      "elapsed_ms": 8.98,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/19/sample",
+      "ok": true,
+      "elapsed_ms": 31.96,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/api/rd-records/20/sample",
+      "ok": true,
+      "elapsed_ms": 32.05,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats/summary",
+      "ok": true,
+      "elapsed_ms": 1.17,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats/by-user",
+      "ok": true,
+      "elapsed_ms": 21.06,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/rd-stats/summary",
+      "ok": true,
+      "elapsed_ms": 1.04,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/rd-stats/by-user",
+      "ok": true,
+      "elapsed_ms": 15.34,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/sample-info/stats",
+      "ok": true,
+      "elapsed_ms": 1.37,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats/summary",
+      "ok": true,
+      "elapsed_ms": 0.9,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/rd-stats/summary",
+      "ok": true,
+      "elapsed_ms": 12.98,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "ok": true,
+      "elapsed_ms": 1.04,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/records",
+      "ok": true,
+      "elapsed_ms": 0.77,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/rd-records",
+      "ok": true,
+      "elapsed_ms": 0.82,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/sample-info",
+      "ok": true,
+      "elapsed_ms": 13.11,
+      "code": 0,
+      "message": "ok",
+      "status": 200
+    }
+  ]
+}

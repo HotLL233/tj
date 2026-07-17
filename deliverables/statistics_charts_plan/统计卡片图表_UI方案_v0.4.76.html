@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>分析检测统计 - 卡片图表 UI 方案</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f7f9fb; color: #20242a; font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; }
+    .page { width: 1500px; min-height: 1120px; margin: 0 auto; padding: 34px 52px 48px; background: #f7f9fb; }
+    h1 { margin: 0 0 28px; font-size: 30px; line-height: 1; color: #078c78; letter-spacing: 0; }
+    .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; }
+    .kpi { position: relative; height: 154px; padding: 16px 18px; background: #fff; border: 1px solid #e5e9ed; border-top: 3px solid var(--c); box-shadow: 0 5px 18px rgba(31,45,61,.06); overflow: hidden; }
+    .kpi.active { border-color: #4f70e8; border-top-color: #4f70e8; box-shadow: 0 0 0 2px rgba(79,112,232,.13), 0 8px 22px rgba(79,112,232,.14); }
+    .kpi-head { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: #4d535b; }
+    .icon { width: 34px; height: 34px; display: grid; place-items: center; background: var(--bg); color: var(--c); font-size: 19px; font-weight: 800; border-radius: 3px; }
+    .metric { margin-top: 10px; font-size: 32px; line-height: 1; font-weight: 800; color: var(--c); }
+    .sub { margin-top: 5px; color: #6f7781; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spark { position: absolute; left: 14px; right: 14px; bottom: 7px; height: 34px; }
+    .mini-bars { position: absolute; right: 14px; bottom: 9px; height: 42px; display: flex; gap: 4px; align-items: end; }
+    .mini-bars i { width: 7px; height: var(--h); background: var(--c); opacity: .72; display: block; }
+    .donut { position: absolute; right: 15px; bottom: 12px; width: 42px; height: 42px; border-radius: 50%; background: conic-gradient(var(--c) 0 62%, #dfe5ea 62% 100%); }
+    .donut:after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: #fff; }
+    .filters { margin: 24px 0 16px; display: flex; align-items: end; justify-content: space-between; }
+    .date-area { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .date-box { width: 206px; height: 50px; padding: 7px 16px; border: 1px solid #b9c0c7; background: #fff; position: relative; }
+    .date-box label { position: absolute; top: -10px; left: 10px; padding: 0 5px; background: #f7f9fb; color: #565d66; font-size: 13px; }
+    .date-box span { line-height: 34px; font-size: 17px; }
+    .quick { display: flex; gap: 6px; width: 100%; margin-top: 2px; }
+    .quick button, .seg button { border: 1px solid #c7cdd4; background: #fff; color: #30363d; height: 31px; padding: 0 13px; font-size: 13px; }
+    .quick button.on, .seg button.on { background: #5575e7; border-color: #5575e7; color: #fff; }
+    .export { height: 40px; border: 0; color: #fff; background: #119c70; padding: 0 18px; font-size: 15px; font-weight: 700; box-shadow: 0 6px 16px rgba(17,156,112,.22); }
+    .chart-panel { background: #fff; border: 1px solid #e2e7eb; box-shadow: 0 5px 18px rgba(31,45,61,.06); padding: 18px 20px 14px; }
+    .chart-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .chart-title { display: flex; align-items: center; gap: 10px; }
+    .chart-title strong { font-size: 18px; }
+    .chart-title small { color: #7b838d; font-size: 12px; }
+    .seg { display: flex; gap: 0; }
+    .seg button + button { border-left: 0; }
+    .chart-body { display: grid; grid-template-columns: 1fr 250px; gap: 24px; min-height: 278px; }
+    .plot { position: relative; border-top: 1px solid #eef1f4; padding-top: 8px; }
+    .chart-svg { width: 100%; height: 256px; display: block; }
+    .side { border-left: 1px solid #edf0f3; padding: 18px 0 0 24px; }
+    .side-row { margin-bottom: 26px; }
+    .side-label { color: #7b838d; font-size: 12px; }
+    .side-value { margin-top: 5px; font-size: 24px; font-weight: 800; color: #2c333a; }
+    .side-note { margin-top: 4px; font-size: 12px; color: #1f8d68; }
+    .entries-title { margin: 24px 0 12px; font-size: 16px; font-weight: 700; color: #373d45; }
+    .entries { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .entry { height: 116px; padding: 16px; background: #fff; border: 1px solid #e3e7eb; display: grid; grid-template-columns: 1fr 104px; gap: 10px; box-shadow: 0 3px 12px rgba(31,45,61,.045); }
+    .entry-main { min-width: 0; }
+    .entry-head { display: flex; align-items: center; gap: 10px; }
+    .entry-icon { width: 34px; height: 34px; background: var(--bg); color: var(--c); display: grid; place-items: center; font-size: 18px; font-weight: 800; border-radius: 3px; }
+    .entry-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entry-desc { margin-top: 11px; font-size: 12px; color: #747c86; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .preview { width: 104px; height: 72px; align-self: center; }
+    .caption { margin-top: 12px; font-size: 12px; color: #8a929c; text-align: right; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>分析检测统计</h1>
+    <section class="kpis">
+      <article class="kpi active" style="--c:#5b70df;--bg:#eef0ff">
+        <div class="kpi-head"><span class="icon">▥</span>总数量</div><div class="metric">12</div><div class="sub">本周趋势</div>
+        <svg class="spark" viewBox="0 0 160 34"><polyline points="0,28 24,23 48,26 72,14 96,18 120,7 160,12" fill="none" stroke="#5b70df" stroke-width="2.5"/><path d="M0 28 L24 23 L48 26 L72 14 L96 18 L120 7 L160 12 L160 34 L0 34Z" fill="#5b70df" opacity=".08"/></svg>
+      </article>
+      <article class="kpi" style="--c:#3b9b4b;--bg:#edf7ef"><div class="kpi-head"><span class="icon">▥</span>总记录数</div><div class="metric">4</div><div class="sub">4 条有效记录</div><div class="mini-bars"><i style="--h:16px"></i><i style="--h:26px"></i><i style="--h:21px"></i><i style="--h:38px"></i><i style="--h:30px"></i></div></article>
+      <article class="kpi" style="--c:#ef7d00;--bg:#fff3e6"><div class="kpi-head"><span class="icon">▥</span>参与人数</div><div class="metric">1</div><div class="sub">检测人分布</div><div class="donut"></div></article>
+      <article class="kpi" style="--c:#8f25a8;--bg:#f7eefa"><div class="kpi-head"><span class="icon">■</span>项目数</div><div class="metric">1</div><div class="sub">项目工作量占比</div><div class="donut"></div></article>
+      <article class="kpi" style="--c:#008b73;--bg:#e9f6f3"><div class="kpi-head"><span class="icon">▲</span>实验室数</div><div class="metric">1</div><div class="sub">1 个项目</div><div class="donut"></div></article>
+      <article class="kpi" style="--c:#e91e55;--bg:#fdebf1"><div class="kpi-head"><span class="icon">▦</span>方法类型</div><div class="metric">1</div><div class="sub">其他：12</div><div class="donut"></div></article>
+    </section>
+
+    <section class="filters">
+      <div class="date-area">
+        <div class="date-box"><label>开始日期</label><span>2026-07-13　▦</span></div><span>至</span><div class="date-box"><label>结束日期</label><span>2026-07-19　▦</span></div>
+        <div class="quick"><button class="on">本周</button><button>本月</button><button>上月</button><button>近7天</button></div>
+      </div>
+      <button class="export">↓　导出 Excel</button>
+    </section>
+
+    <section class="chart-panel">
+      <div class="chart-top">
+        <div class="chart-title"><span class="icon" style="--c:#5b70df;--bg:#eef0ff">▥</span><div><strong>总数量趋势</strong><br><small>2026-07-13 至 2026-07-19</small></div></div>
+        <div class="seg"><button class="on">数量</button><button>记录数</button><button>管理分值</button><button>折线图</button><button>柱状图</button></div>
+      </div>
+      <div class="chart-body">
+        <div class="plot">
+          <svg class="chart-svg" viewBox="0 0 1020 256" aria-label="总数量折线图">
+            <g stroke="#e8edf1" stroke-width="1"><line x1="48" y1="28" x2="995" y2="28"/><line x1="48" y1="78" x2="995" y2="78"/><line x1="48" y1="128" x2="995" y2="128"/><line x1="48" y1="178" x2="995" y2="178"/><line x1="48" y1="228" x2="995" y2="228"/></g>
+            <g fill="#8a929b" font-size="11" font-family="Microsoft YaHei"><text x="18" y="232">0</text><text x="18" y="182">1</text><text x="18" y="132">2</text><text x="18" y="82">3</text><text x="18" y="32">4</text><text x="45" y="251">07-13</text><text x="200" y="251">07-14</text><text x="354" y="251">07-15</text><text x="509" y="251">07-16</text><text x="663" y="251">07-17</text><text x="817" y="251">07-18</text><text x="955" y="251">07-19</text></g>
+            <path d="M62 178 L216 128 L370 178 L524 78 L678 128 L832 28 L978 78 L978 228 L62 228Z" fill="#5b70df" opacity=".09"/>
+            <polyline points="62,178 216,128 370,178 524,78 678,128 832,28 978,78" fill="none" stroke="#5b70df" stroke-width="3"/>
+            <g fill="#fff" stroke="#5b70df" stroke-width="3"><circle cx="62" cy="178" r="5"/><circle cx="216" cy="128" r="5"/><circle cx="370" cy="178" r="5"/><circle cx="524" cy="78" r="5"/><circle cx="678" cy="128" r="5"/><circle cx="832" cy="28" r="5"/><circle cx="978" cy="78" r="5"/></g>
+          </svg>
+        </div>
+        <aside class="side"><div class="side-row"><div class="side-label">区间总量</div><div class="side-value">12</div><div class="side-note">与顶部卡片一致</div></div><div class="side-row"><div class="side-label">峰值日期</div><div class="side-value">07-18</div><div class="side-note">4 个检测量</div></div><div class="side-row"><div class="side-label">有效记录</div><div class="side-value">4</div></div></aside>
+      </div>
+    </section>
+
+    <div class="entries-title">统计分类</div>
+    <section class="entries">
+      <article class="entry" style="--c:#1976d2;--bg:#eaf3fb"><div class="entry-main"><div class="entry-head"><span class="entry-icon">▥</span><span class="entry-name">按周统计</span></div><div class="entry-desc">每月第几周汇总</div></div><svg class="preview" viewBox="0 0 104 72"><polyline points="4,61 20,49 36,54 53,32 70,39 86,15 100,24" fill="none" stroke="#1976d2" stroke-width="2.5"/><line x1="4" y1="64" x2="100" y2="64" stroke="#dfe5ea"/></svg></article>
+      <article class="entry" style="--c:#43a047;--bg:#edf7ef"><div class="entry-main"><div class="entry-head"><span class="entry-icon">▦</span><span class="entry-name">按月统计</span></div><div class="entry-desc">每月汇总数据</div></div><svg class="preview" viewBox="0 0 104 72"><g fill="#43a047" opacity=".78"><rect x="7" y="43" width="11" height="22"/><rect x="26" y="31" width="11" height="34"/><rect x="45" y="39" width="11" height="26"/><rect x="64" y="18" width="11" height="47"/><rect x="83" y="27" width="11" height="38"/></g></svg></article>
+      <article class="entry" style="--c:#6d4c41;--bg:#f2efee"><div class="entry-main"><div class="entry-head"><span class="entry-icon">◴</span><span class="entry-name">检测人记录</span></div><div class="entry-desc">逐条记录明细</div></div><svg class="preview" viewBox="0 0 104 72"><g fill="#6d4c41" opacity=".75"><rect x="8" y="14" width="74" height="8"/><rect x="8" y="32" width="46" height="8"/><rect x="8" y="50" width="88" height="8"/></g></svg></article>
+      <article class="entry" style="--c:#1565c0;--bg:#eaf2fb"><div class="entry-main"><div class="entry-head"><span class="entry-icon">▦</span><span class="entry-name">事业部统计</span></div><div class="entry-desc">按事业部汇总统计</div></div><svg class="preview" viewBox="0 0 104 72"><g fill="#1565c0" opacity=".78"><rect x="11" y="34" width="14" height="31"/><rect x="34" y="17" width="14" height="48"/><rect x="57" y="27" width="14" height="38"/><rect x="80" y="43" width="14" height="22"/></g></svg></article>
+      <article class="entry" style="--c:#008b73;--bg:#e9f6f3"><div class="entry-main"><div class="entry-head"><span class="entry-icon">▲</span><span class="entry-name">实验室-项目-方法</span></div><div class="entry-desc">对应关系与数量</div></div><svg class="preview" viewBox="0 0 104 72"><g><rect x="8" y="15" width="66" height="10" fill="#008b73"/><rect x="74" y="15" width="22" height="10" fill="#83cbbd"/><rect x="8" y="34" width="44" height="10" fill="#008b73"/><rect x="52" y="34" width="34" height="10" fill="#83cbbd"/><rect x="8" y="53" width="76" height="10" fill="#008b73"/><rect x="84" y="53" width="12" height="10" fill="#83cbbd"/></g></svg></article>
+      <article class="entry" style="--c:#ef7d00;--bg:#fff3e6"><div class="entry-main"><div class="entry-head"><span class="entry-icon">■</span><span class="entry-name">项目-汇总</span></div><div class="entry-desc">项目数量与金额</div></div><svg class="preview" viewBox="0 0 104 72"><g fill="#ef7d00" opacity=".78"><rect x="8" y="13" width="89" height="9"/><rect x="8" y="31" width="64" height="9"/><rect x="8" y="49" width="43" height="9"/></g></svg></article>
+      <article class="entry" style="--c:#9c27b0;--bg:#f7ebf9"><div class="entry-main"><div class="entry-head"><span class="entry-icon">▦</span><span class="entry-name">实验室-汇总</span></div><div class="entry-desc">实验室数量与金额</div></div><div class="preview" style="position:relative"><div class="donut" style="--c:#9c27b0;right:27px;bottom:12px;width:55px;height:55px"></div></div></article>
+      <article class="entry" style="--c:#e91e63;--bg:#fdebf2"><div class="entry-main"><div class="entry-head"><span class="entry-icon">▥</span><span class="entry-name">检测人汇总表</span></div><div class="entry-desc">人员数量与系数</div></div><svg class="preview" viewBox="0 0 104 72"><g fill="#e91e63" opacity=".75"><rect x="8" y="13" width="54" height="9"/><rect x="8" y="31" width="87" height="9"/><rect x="8" y="49" width="68" height="9"/></g></svg></article>
+    </section>
+    <div class="caption">UI 评审稿：图中数值为版式演示，实际图表读取当前筛选条件下的程序数据</div>
+  </main>
+</body>
+</html>

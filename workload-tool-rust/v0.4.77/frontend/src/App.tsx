@@ -1,0 +1,86 @@
+import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Box } from '@mui/material';
+import { UserProvider, useUser } from './UserContext';
+import Layout from './components/Layout';
+import HomePage from './pages/HomePage';
+import SamplePortal from './pages/SamplePortal';
+import WorkloadPortal from './pages/WorkloadPortal';
+import EntryPage from './pages/EntryPage';
+import SampleEntryPage from './pages/SampleEntryPage';
+import SampleStatsPage from './pages/SampleStatsPage';
+import RdRecordsPage from './pages/RdRecordsPage';
+import StatsPage from './pages/StatsPage';
+import ManagePage from './pages/ManagePage';
+import AdminRolesPage from './pages/AdminRolesPage';
+import HelpPage from './pages/HelpPage';
+import SampleInfoHome from './pages/SampleInfoHome';
+import SampleInfoEntry from './pages/SampleInfoEntry';
+import SampleInfoStatsPage from './pages/SampleInfoStatsPage';
+import LoginPage from './pages/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
+
+interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState { return { hasError: true, error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('ErrorBoundary caught error:', error, info); }
+  render() { if (this.state.hasError) return <div style={{ padding: '2rem', textAlign: 'center', marginTop: '20vh' }}><h1>页面出错了</h1><p style={{ color: '#666', margin: '1rem 0' }}>{this.state.error?.message}</p><button onClick={() => this.setState({ hasError: false, error: null })} style={{ padding: '0.5rem 1.5rem', fontSize: '1rem', cursor: 'pointer', borderRadius: '2px', border: '1px solid #1976d2', background: '#1976d2', color: '#fff' }}>重试</button></div>; return this.props.children; }
+}
+
+const NotFoundPage: React.FC = () => <div style={{ padding: '2rem', textAlign: 'center', marginTop: '10vh' }}><h1 style={{ fontSize: '4rem', color: '#ccc', margin: 0 }}>404</h1><p style={{ color: '#666', marginTop: '1rem' }}>页面未找到</p></div>;
+
+/** v0.4.33 补丁: 未登录跳转到 /login（用于根路径 /） */
+const RequireAuth: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { isLoggedIn } = useUser();
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
+const App: React.FC = () => (<ErrorBoundary><UserProvider><Routes><Route element={<Layout />}>
+  {/* 公开路由 */}
+  <Route path="/login" element={<Box sx={{ position: 'fixed', inset: 0, zIndex: 9999 }}><LoginPage /></Box>} />
+
+  {/* v0.4.33 补丁: 未登录访问根路径时直接跳转登录页 */}
+  <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
+
+  {/* 送样分支: /sample → portal → entry/list/stats — v0.4.27-A: 需登录 */}
+  <Route path="/sample" element={<ProtectedRoute><SamplePortal /></ProtectedRoute>} />
+  <Route path="/sample/:groupId" element={<ProtectedRoute><SampleEntryPage /></ProtectedRoute>} />
+  <Route path="/sample/stats" element={<ProtectedRoute><SampleStatsPage /></ProtectedRoute>} />
+  <Route path="/sample-records" element={<ProtectedRoute><RdRecordsPage /></ProtectedRoute>} />
+
+  {/* 样品信息登记分支: /sample-info → home → entry/records/stats — v0.4.27-A: 需登录 */}
+  <Route path="/sample-info" element={<ProtectedRoute><SampleInfoHome /></ProtectedRoute>} />
+  <Route path="/sample-info/entry" element={<ProtectedRoute><SampleInfoEntry /></ProtectedRoute>} />
+  <Route path="/sample-info/stats" element={<ProtectedRoute><SampleInfoStatsPage /></ProtectedRoute>} />
+
+  {/* 工作量分支: /workload → portal → entry/stats/manage */}
+  <Route path="/workload" element={<ProtectedRoute><WorkloadPortal /></ProtectedRoute>} />
+  <Route path="/entry/:groupId" element={<ProtectedRoute><EntryPage /></ProtectedRoute>} />
+  <Route path="/stats" element={<ProtectedRoute><StatsPage /></ProtectedRoute>} />
+  <Route path="/help" element={<HelpPage />} />
+  {/* v0.4.32: 管理页需管理员或任一 manage:* 权限（与「管理」按钮可见性一致） */}
+  <Route path="/manage" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/projects" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/groups" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/divisions" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/master-import" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/methods" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/trash" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/audit" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/backup" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/help" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/sampleinfo" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/users" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/layouts" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/forms" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/exports" element={<ProtectedRoute requireManage><ManagePage /></ProtectedRoute>} />
+  <Route path="/manage/roles" element={<ProtectedRoute requireAdmin><AdminRolesPage /></ProtectedRoute>} />
+  {/* v0.4.32: 角色管理（仅管理员） */}
+  <Route path="/admin/roles" element={<ProtectedRoute requireAdmin><AdminRolesPage /></ProtectedRoute>} />
+
+  <Route path="/404" element={<NotFoundPage />} />
+  <Route path="*" element={<Navigate to="/404" replace />} />
+</Route></Routes></UserProvider></ErrorBoundary>);
+export default App;

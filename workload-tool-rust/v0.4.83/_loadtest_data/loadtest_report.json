@@ -1,0 +1,248 @@
+{
+  "scenario": {
+    "total_people": 30,
+    "analysts": 10,
+    "rd_senders": 10,
+    "other_senders": 10,
+    "samplers": 5,
+    "analysis_records": 1500,
+    "rd_records": 1800,
+    "sample_info_records": 900
+  },
+  "database": "D:\\桌面\\工作量统计工具项目\\workload-tool-rust\\v0.4.83\\_loadtest_data\\workload_loadtest.db",
+  "counts": {
+    "users": 30,
+    "work_records": 1500,
+    "rd_work_records": 1800,
+    "sample_info_records": 900
+  },
+  "load_steps": [
+    {
+      "step": "insert_analysis_work_records",
+      "ms": 37.21390000100655,
+      "rows": 1500
+    },
+    {
+      "step": "insert_rd_work_records",
+      "ms": 44.49019999992743,
+      "rows": 1800
+    },
+    {
+      "step": "insert_sample_info_records",
+      "ms": 18.150400001104572,
+      "rows": 900
+    }
+  ],
+  "query_pressure": {
+    "rounds": 120,
+    "workers": 16,
+    "errors": [],
+    "latency_ms": {
+      "min": 8.116999999401742,
+      "avg": 13.87092999999974,
+      "p95": 21.70300000034331,
+      "max": 27.115999999296037
+    }
+  },
+  "sample_results": {
+    "analysis_summary": [
+      {
+        "record_count": 1500,
+        "total_quantity": 9636,
+        "score": 14164.8575
+      }
+    ],
+    "analysis_by_user": [
+      {
+        "user_name": "分析员09",
+        "record_count": 173,
+        "total_quantity": 1108
+      },
+      {
+        "user_name": "分析员01",
+        "record_count": 165,
+        "total_quantity": 1080
+      },
+      {
+        "user_name": "分析员06",
+        "record_count": 159,
+        "total_quantity": 1063
+      },
+      {
+        "user_name": "分析员10",
+        "record_count": 157,
+        "total_quantity": 1025
+      },
+      {
+        "user_name": "分析员05",
+        "record_count": 157,
+        "total_quantity": 976
+      },
+      {
+        "user_name": "分析员02",
+        "record_count": 149,
+        "total_quantity": 937
+      },
+      {
+        "user_name": "分析员07",
+        "record_count": 140,
+        "total_quantity": 898
+      },
+      {
+        "user_name": "分析员08",
+        "record_count": 132,
+        "total_quantity": 862
+      },
+      {
+        "user_name": "分析员04",
+        "record_count": 144,
+        "total_quantity": 858
+      },
+      {
+        "user_name": "分析员03",
+        "record_count": 124,
+        "total_quantity": 829
+      }
+    ],
+    "rd_summary": [
+      {
+        "record_count": 1800,
+        "total_quantity": 9670,
+        "score": 11837.05
+      }
+    ],
+    "rd_by_user": [
+      {
+        "user_name": "研发01",
+        "record_count": 106,
+        "total_quantity": 581
+      },
+      {
+        "user_name": "部门送样01",
+        "record_count": 111,
+        "total_quantity": 565
+      },
+      {
+        "user_name": "研发07",
+        "record_count": 105,
+        "total_quantity": 547
+      },
+      {
+        "user_name": "部门送样10",
+        "record_count": 94,
+        "total_quantity": 546
+      },
+      {
+        "user_name": "研发08",
+        "record_count": 102,
+        "total_quantity": 530
+      },
+      {
+        "user_name": "研发02",
+        "record_count": 92,
+        "total_quantity": 522
+      },
+      {
+        "user_name": "研发06",
+        "record_count": 90,
+        "total_quantity": 517
+      },
+      {
+        "user_name": "部门送样02",
+        "record_count": 94,
+        "total_quantity": 512
+      },
+      {
+        "user_name": "研发09",
+        "record_count": 93,
+        "total_quantity": 508
+      },
+      {
+        "user_name": "研发03",
+        "record_count": 93,
+        "total_quantity": 499
+      }
+    ],
+    "rd_by_division": [
+      {
+        "division_name": "动保一部",
+        "record_count": 376,
+        "total_quantity": 2043
+      },
+      {
+        "division_name": "化工一部",
+        "record_count": 369,
+        "total_quantity": 2003
+      },
+      {
+        "division_name": "研究院",
+        "record_count": 352,
+        "total_quantity": 1913
+      },
+      {
+        "division_name": "动保二部",
+        "record_count": 365,
+        "total_quantity": 1884
+      },
+      {
+        "division_name": "化工二部",
+        "record_count": 338,
+        "total_quantity": 1827
+      }
+    ],
+    "sample_info_stats": [
+      {
+        "status": "已完成",
+        "record_count": 277,
+        "total_quantity": 1249
+      },
+      {
+        "status": "待检测",
+        "record_count": 308,
+        "total_quantity": 1386
+      },
+      {
+        "status": "检测中",
+        "record_count": 315,
+        "total_quantity": 1459
+      }
+    ],
+    "rd_pending_samples": [
+      {
+        "status": "已取样",
+        "record_count": 1108
+      },
+      {
+        "status": "待取样",
+        "record_count": 692
+      }
+    ],
+    "rd_sampler_load": [
+      {
+        "sampler": "取样员01",
+        "record_count": 241
+      },
+      {
+        "sampler": "取样员05",
+        "record_count": 233
+      },
+      {
+        "sampler": "取样员02",
+        "record_count": 221
+      },
+      {
+        "sampler": "取样员04",
+        "record_count": 212
+      },
+      {
+        "sampler": "取样员03",
+        "record_count": 201
+      }
+    ]
+  },
+  "total_elapsed_ms": 385.2153999996517,
+  "notes": [
+    "This is a database-level workload simulation using the same logical tables and query patterns.",
+    "The packaged app login endpoint only accepts admin credentials in this build, so per-user token/API login pressure was not simulated."
+  ]
+}
