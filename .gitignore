@@ -48,3 +48,6 @@ pdfium*.zip
 
 # Deliverables build cache (Rust target)
 deliverables/**/target/
+
+# Claude worktree 链接(内部工具产物,非项目内容)
+.claude/worktrees/
