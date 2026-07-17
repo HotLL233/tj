@@ -23,6 +23,13 @@
 4. 更新 `build_installer.iss`（文件源路径、版本号、输出文件名）
 5. `ISCC.exe build_installer.iss`
 
+## Git 同步约定 (2026-07-13 起)
+
+- 用户频繁要求"同步 git，更改数太多"：直接 `git add -A` + 单笔提交 + 推送，无需逐文件确认。
+- **提交前必须排查构建/缓存类垃圾**：Rust `target/`、`vite.config.ts.timestamp-*.mjs`、`*.bak`、`pdfium*.zip`、`.workbuddy/artifacts/`、`deliverables/**/target/`。
+- 若误将大型产物（如 `deliverables/_build-cache-*/target/` 约 5GB）加入暂存，**在推送前**用 `git reset --mixed HEAD~N` 回退并重写历史，使大文件不进远程。
+- 用户工作流会保留大量 `v0.x.y/` 整份版本拷贝与 `deliverables/` 交付物目录，均按正常文件提交。
+
 ## 技术约定
 
 - Rust 版本号唯一来源：`Cargo.toml` → `env!("CARGO_PKG_VERSION")` 自动传播到 tray.rs/main.rs
