@@ -1,0 +1,235 @@
+use crate::db::DbPool;
+use crate::error::{AppError, Result};
+use crate::models::record::{RecordCreate, RecordResponse, RecordUpdate};
+use crate::repo::{audit_repo, trace_repo};
+
+const SELECT_RECORD: &str =
+    "SELECT wr.id, wr.business_no, wr.project_id, wr.method_id,
+            COALESCE(NULLIF(wr.project_name_snapshot,''), p.name),
+            COALESCE(NULLIF(wr.lab_name_snapshot,''), pg.name, '未知'),
+            wr.user_name, wr.quantity, wr.multiplier, wr.recorded_at, wr.created_at,
+            wr.deleted_at,
+            COALESCE(NULLIF(wr.method_name_snapshot,''), NULLIF(m.full_name,''), NULLIF(m.name,'')),
+            (SELECT group_concat(DISTINCT mt.name)
+             FROM method_type_links mtl JOIN method_types mt ON mtl.method_type_id=mt.id
+             WHERE mtl.method_id=wr.method_id),
+            COALESCE(NULLIF(wr.high_item_snapshot,''), wr.high_item, p.high_item),
+            COALESCE(wr.coefficient_snapshot,1.0)
+     FROM work_records wr
+     JOIN projects p ON wr.project_id=p.id
+     LEFT JOIN methods m ON wr.method_id=m.id
+     LEFT JOIN project_groups pg ON pg.id=wr.group_id";
+
+fn map_record(row: &rusqlite::Row<'_>) -> rusqlite::Result<RecordResponse> {
+    Ok(RecordResponse {
+        id: row.get(0)?, business_no: row.get::<_,String>(1).unwrap_or_default(),
+        project_id: row.get(2)?, method_id: row.get(3)?, project_name: row.get(4)?,
+        group_name: row.get(5)?, user_name: row.get(6)?, quantity: row.get(7)?,
+        multiplier: row.get::<_,f64>(8).unwrap_or(1.0), recorded_at: row.get(9)?,
+        created_at: row.get(10)?, deleted_at: row.get(11)?, method_name: row.get(12)?,
+        method_type: row.get(13)?, high_item: row.get(14)?,
+        coefficient_snapshot: row.get::<_,f64>(15).unwrap_or(1.0),
+    })
+}
+
+fn snapshot(record: &RecordResponse) -> serde_json::Value {
+    serde_json::json!({
+        "business_no": record.business_no, "project_id": record.project_id,
+        "project_name": record.project_name, "method_id": record.method_id,
+        "method_name": record.method_name, "lab_name": record.group_name,
+        "user_name": record.user_name, "quantity": record.quantity,
+        "recorded_at": record.recorded_at, "high_item": record.high_item,
+        "coefficient_snapshot": record.coefficient_snapshot, "deleted_at": record.deleted_at,
+    })
+}
+
+fn structured_log(
+    conn: &rusqlite::Connection, action: &str, record: &RecordResponse,
+    operator: &str, detail: &str, before: Option<&serde_json::Value>, after: Option<&serde_json::Value>,
+) -> Result<()> {
+    audit_repo::log_structured_on_conn(
+        conn, action, "work_records", Some(record.id), operator, detail, "work",
+        &record.business_no, before, after, "record",
+    )?;
+    trace_repo::log_event_on_conn(
+        conn, "work", "work_records", record.id, &record.business_no, action,
+        None, None, operator, detail, before, after,
+    )
+}
+
+pub fn list(
+    pool: &DbPool, project_id: Option<i64>, group_id: Option<i64>, user_name: Option<&str>,
+    division_id: Option<i64>, start: Option<&str>, end: Option<&str>, page: i64,
+    page_size: i64, include_deleted: bool,
+) -> Result<(Vec<RecordResponse>, i64)> {
+    let conn = pool.get()?;
+    let mut clauses = vec![];
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![];
+    if !include_deleted { clauses.push("wr.deleted_at IS NULL".to_string()); }
+    if let Some(value)=project_id { clauses.push(format!("wr.project_id={value}")); }
+    if let Some(value)=group_id { clauses.push(format!("wr.group_id={value}")); }
+    if let Some(value)=division_id { clauses.push(format!("wr.division_id={value}")); }
+    if let Some(value)=user_name { let i=params.len()+1; clauses.push(format!("wr.user_name=?{i}")); params.push(Box::new(value.to_string())); }
+    if let Some(value)=start { let i=params.len()+1; clauses.push(format!("wr.recorded_at>=?{i}")); params.push(Box::new(value.to_string())); }
+    if let Some(value)=end { let i=params.len()+1; clauses.push(format!("wr.recorded_at<=?{i}")); params.push(Box::new(format!("{value}T23:59:59"))); }
+    let where_sql=if clauses.is_empty(){String::new()}else{format!("WHERE {}",clauses.join(" AND "))};
+    let sql=format!("{} {} ORDER BY wr.recorded_at DESC LIMIT {} OFFSET {}",SELECT_RECORD,where_sql,page_size,(page-1)*page_size);
+    let mut stmt=conn.prepare(&sql)?;
+    let rows=stmt.query_map(rusqlite::params_from_iter(params.iter().map(|p|p.as_ref())),map_record)?;
+    let items=rows.collect::<std::result::Result<Vec<_>,_>>()?;
+    let count:i64=conn.query_row(
+        &format!("SELECT COUNT(*) FROM work_records wr JOIN projects p ON p.id=wr.project_id {}",where_sql),
+        rusqlite::params_from_iter(params.iter().map(|p|p.as_ref())),|row|row.get(0),
+    )?;
+    Ok((items,count))
+}
+
+fn get_by_id_on_conn(conn: &rusqlite::Connection,id:i64)->Result<RecordResponse>{
+    conn.query_row(&format!("{} WHERE wr.id=?1",SELECT_RECORD),[id],map_record).map_err(|error|match error{
+        rusqlite::Error::QueryReturnedNoRows=>AppError::NotFound("记录不存在".into()), _=>error.into(),
+    })
+}
+
+pub fn get_by_id(pool:&DbPool,id:i64)->Result<RecordResponse>{
+    let conn = pool.get()?;
+    get_by_id_on_conn(&conn, id)
+}
+
+pub fn create(pool:&DbPool,body:&RecordCreate,operator:&str)->Result<RecordResponse>{
+    let mut conn=pool.get()?;
+    let tx=conn.transaction()?;
+    let inserted=tx.execute(
+        "INSERT INTO work_records
+         (project_id,method_id,user_name,quantity,recorded_at,group_id,division_id,multiplier,high_item,
+          project_name_snapshot,lab_name_snapshot,method_name_snapshot,high_item_snapshot,coefficient_snapshot)
+         SELECT ?1,?2,?3,?4,?5,?6,?7,
+                COALESCE(?8,(SELECT multiplier FROM methods WHERE id=?2),1.0),
+                COALESCE(?9,p.high_item),p.name,COALESCE(pg.name,''),
+                COALESCE((SELECT COALESCE(NULLIF(full_name,''),name) FROM methods WHERE id=?2),''),
+                COALESCE(?9,p.high_item,''),COALESCE(p.coefficient,1.0)
+         FROM projects p LEFT JOIN project_groups pg ON pg.id=?6 WHERE p.id=?1",
+        rusqlite::params![body.project_id,body.method_id,&body.user_name,body.quantity,&body.recorded_at,
+            body.group_id,body.division_id,body.multiplier,body.high_item],
+    )?;
+    if inserted==0 { return Err(AppError::Validation("项目不存在".into())); }
+    let id=tx.last_insert_rowid();
+    let business_no=trace_repo::make_business_no("WK",&body.recorded_at,id);
+    tx.execute("UPDATE work_records SET business_no=?1 WHERE id=?2",rusqlite::params![business_no,id])?;
+    let record=get_by_id_on_conn(&tx,id)?;
+    let after=snapshot(&record);
+    let detail=format!("创建分析检测记录 {}：项目「{}」/ 方法「{}」，数量 {}",record.business_no,record.project_name,record.method_name.as_deref().unwrap_or("未知"),record.quantity);
+    structured_log(&tx,"create",&record,operator,&detail,None,Some(&after))?;
+    tx.commit()?;
+    get_by_id_on_conn(&conn,id)
+}
+
+pub fn update(pool:&DbPool,id:i64,body:&RecordUpdate,operator:&str)->Result<RecordResponse>{
+    let mut conn=pool.get()?;
+    let tx=conn.transaction()?;
+    let existing=get_by_id_on_conn(&tx,id)?;
+    if existing.deleted_at.is_some(){return Err(AppError::Validation("记录已被删除，无法编辑".into()));}
+    let before=snapshot(&existing);
+    let mut changes=Vec::new();
+    if let Some(value)=&body.user_name { if value!=&existing.user_name { changes.push(format!("人员 {} → {}",existing.user_name,value)); tx.execute("UPDATE work_records SET user_name=?1 WHERE id=?2",rusqlite::params![value,id])?; } }
+    if let Some(value)=body.quantity { if value!=existing.quantity { changes.push(format!("数量 {} → {}",existing.quantity,value)); tx.execute("UPDATE work_records SET quantity=?1 WHERE id=?2",rusqlite::params![value,id])?; } }
+    if let Some(value)=&body.recorded_at { if value!=&existing.recorded_at { changes.push(format!("日期 {} → {}",existing.recorded_at,value)); tx.execute("UPDATE work_records SET recorded_at=?1 WHERE id=?2",rusqlite::params![value,id])?; } }
+    if let Some(value)=body.multiplier { if (value-existing.multiplier).abs()>f64::EPSILON { changes.push(format!("单价倍率 {:.2} → {:.2}",existing.multiplier,value)); tx.execute("UPDATE work_records SET multiplier=?1 WHERE id=?2",rusqlite::params![value,id])?; } }
+    if let Some(value)=body.project_id { if value!=existing.project_id { changes.push(format!("项目ID {} → {}",existing.project_id,value)); tx.execute("UPDATE work_records SET project_id=?1,project_name_snapshot=(SELECT name FROM projects WHERE id=?1),high_item_snapshot=COALESCE((SELECT high_item FROM projects WHERE id=?1),''),coefficient_snapshot=COALESCE((SELECT coefficient FROM projects WHERE id=?1),1.0) WHERE id=?2",rusqlite::params![value,id])?; } }
+    if let Some(value)=body.method_id { if Some(value)!=existing.method_id { changes.push(format!("方法ID {:?} → {}",existing.method_id,value)); tx.execute("UPDATE work_records SET method_id=?1,method_name_snapshot=COALESCE((SELECT COALESCE(NULLIF(full_name,''),name) FROM methods WHERE id=?1),'') WHERE id=?2",rusqlite::params![value,id])?; } }
+    if let Some(value)=body.group_id { changes.push(format!("实验室更新为ID {}",value)); tx.execute("UPDATE work_records SET group_id=?1,lab_name_snapshot=COALESCE((SELECT name FROM project_groups WHERE id=?1),'') WHERE id=?2",rusqlite::params![value,id])?; }
+    if let Some(value)=body.division_id { changes.push(format!("部门更新为ID {}",value)); tx.execute("UPDATE work_records SET division_id=?1 WHERE id=?2",rusqlite::params![value,id])?; }
+    if let Some(value)=&body.high_item { let normalized=if value.trim().is_empty(){None}else{Some(value.trim())}; if normalized!=existing.high_item.as_deref(){changes.push(format!("高项 {:?} → {:?}",existing.high_item,normalized)); tx.execute("UPDATE work_records SET high_item=?1,high_item_snapshot=COALESCE(?1,'') WHERE id=?2",rusqlite::params![normalized,id])?;} }
+    if changes.is_empty(){return Err(AppError::Validation("没有需要更新的字段".into()));}
+    tx.execute("UPDATE work_records SET updated_at=datetime('now','localtime') WHERE id=?1",[id])?;
+    let updated=get_by_id_on_conn(&tx,id)?;
+    let after=snapshot(&updated);
+    let detail=format!("修改 {}：{}",updated.business_no,changes.join("，"));
+    structured_log(&tx,"update",&updated,operator,&detail,Some(&before),Some(&after))?;
+    tx.commit()?;
+    get_by_id_on_conn(&conn,id)
+}
+
+pub fn soft_delete(pool:&DbPool,id:i64,operator:&str)->Result<()> {
+    let mut conn=pool.get()?; let tx=conn.transaction()?; let existing=get_by_id_on_conn(&tx,id)?;
+    if existing.deleted_at.is_some(){return Err(AppError::Validation("记录已被删除".into()));}
+    let before=snapshot(&existing); tx.execute("UPDATE work_records SET deleted_at=datetime('now','localtime'),updated_at=datetime('now','localtime') WHERE id=?1",[id])?;
+    let updated=get_by_id_on_conn(&tx,id)?; let after=snapshot(&updated); let detail=format!("删除分析检测记录 {}",updated.business_no);
+    structured_log(&tx,"delete",&updated,operator,&detail,Some(&before),Some(&after))?; tx.commit()?; Ok(())
+}
+
+pub fn restore(pool:&DbPool,id:i64,operator:&str)->Result<RecordResponse>{
+    let mut conn=pool.get()?; let tx=conn.transaction()?; let existing=get_by_id_on_conn(&tx,id)?;
+    if existing.deleted_at.is_none(){return Err(AppError::Validation("记录未被删除，无需恢复".into()));}
+    let before=snapshot(&existing); tx.execute("UPDATE work_records SET deleted_at=NULL,updated_at=datetime('now','localtime') WHERE id=?1",[id])?;
+    let updated=get_by_id_on_conn(&tx,id)?; let after=snapshot(&updated); let detail=format!("恢复分析检测记录 {}",updated.business_no);
+    structured_log(&tx,"restore",&updated,operator,&detail,Some(&before),Some(&after))?; tx.commit()?; get_by_id_on_conn(&conn,id)
+}
+
+pub fn delete_by_user(pool:&DbPool,user_name:&str,start:Option<&str>,end:Option<&str>,operator:&str)->Result<i64>{
+    let mut conn=pool.get()?; let tx=conn.transaction()?;
+    let mut select="SELECT id FROM work_records WHERE user_name=?1 AND deleted_at IS NULL".to_string();
+    let mut params:Vec<Box<dyn rusqlite::types::ToSql>>=vec![Box::new(user_name.to_string())];
+    if let Some(value)=start{let i=params.len()+1;select.push_str(&format!(" AND recorded_at>=?{i}"));params.push(Box::new(value.to_string()));}
+    if let Some(value)=end{let i=params.len()+1;select.push_str(&format!(" AND recorded_at<=?{i}"));params.push(Box::new(format!("{value}T23:59:59")));}
+    let ids:Vec<i64>={let mut stmt=tx.prepare(&select)?;let rows=stmt.query_map(rusqlite::params_from_iter(params.iter().map(|p|p.as_ref())),|r|r.get(0))?;rows.collect::<std::result::Result<Vec<_>,_>>()?};
+    for id in &ids{let before_rec=get_by_id_on_conn(&tx,*id)?;let before=snapshot(&before_rec);tx.execute("UPDATE work_records SET deleted_at=datetime('now','localtime'),updated_at=datetime('now','localtime') WHERE id=?1",[*id])?;let after_rec=get_by_id_on_conn(&tx,*id)?;let after=snapshot(&after_rec);structured_log(&tx,"delete",&after_rec,operator,"批量删除分析检测记录",Some(&before),Some(&after))?;}
+    tx.commit()?;Ok(ids.len() as i64)
+}
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+    fn setup()->(DbPool,std::path::PathBuf,i64,i64,i64){
+        let path=std::env::temp_dir().join(format!("trace_work_{}.db",uuid::Uuid::new_v4()));
+        let pool=crate::db::init_pool(path.to_str().unwrap());crate::db::migrations::run(&pool.get().unwrap()).unwrap();
+        let conn=pool.get().unwrap();conn.execute("INSERT INTO project_groups(name) VALUES('Lab01')",[]).unwrap();let group=conn.last_insert_rowid();
+        conn.execute("INSERT INTO projects(group_id,name,coefficient) VALUES(?1,'Project01',2.0)",[group]).unwrap();let project=conn.last_insert_rowid();
+        conn.execute("INSERT INTO methods(name,full_name,coefficient) VALUES('Method01','Method01 Full',1.5)",[]).unwrap();let method=conn.last_insert_rowid();drop(conn);(pool,path,group,project,method)
+    }
+    #[test]
+    fn score_snapshot_and_trace_survive_master_data_change(){
+        let(pool,path,group,project,method)=setup();let record=create(&pool,&RecordCreate{project_id:project,method_id:Some(method),user_name:"detector01".into(),quantity:3,recorded_at:"2026-07-18T09:00:00".into(),group_id:Some(group),multiplier:None,high_item:Some("High01".into()),division_id:None},"admin").unwrap();
+        assert!(record.business_no.starts_with("WK-20260718-"));assert_eq!(record.coefficient_snapshot,2.0);
+        pool.get().unwrap().execute("UPDATE projects SET coefficient=9.0,name='Changed' WHERE id=?1",[project]).unwrap();let reread=get_by_id(&pool,record.id).unwrap();assert_eq!(reread.coefficient_snapshot,2.0);assert_eq!(reread.project_name,"Project01");
+        let events=crate::repo::trace_repo::list(&pool,"work_records",record.id).unwrap();assert_eq!(events.len(),1);assert_eq!(events[0].event_type,"create");drop(pool);let _=std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn update_delete_restore_builds_structured_audit_timeline(){
+        let(pool,path,group,project,method)=setup();
+        let record=create(&pool,&RecordCreate{project_id:project,method_id:Some(method),user_name:"detector01".into(),quantity:3,recorded_at:"2026-07-18T09:00:00".into(),group_id:Some(group),multiplier:None,high_item:None,division_id:None},"creator01").unwrap();
+        update(&pool,record.id,&RecordUpdate{user_name:None,quantity:Some(5),recorded_at:None,multiplier:None,project_id:None,method_id:None,group_id:None,division_id:None,batch_no:None,notes:None,high_item:None},"editor01").unwrap();
+        soft_delete(&pool,record.id,"deleter01").unwrap();
+        restore(&pool,record.id,"restorer01").unwrap();
+
+        let events=crate::repo::trace_repo::list(&pool,"work_records",record.id).unwrap();
+        assert_eq!(events.iter().map(|event|event.event_type.as_str()).collect::<Vec<_>>(),vec!["create","update","delete","restore"]);
+        assert_eq!(events[1].operator,"editor01");
+        assert_eq!(events[1].before_data.as_ref().and_then(|v|v.get("quantity")).and_then(|v|v.as_i64()),Some(3));
+        assert_eq!(events[1].after_data.as_ref().and_then(|v|v.get("quantity")).and_then(|v|v.as_i64()),Some(5));
+
+        let(audits,total)=crate::repo::audit_repo::list(&pool,1,20,Some("work"),None,None,Some(&record.business_no)).unwrap();
+        assert_eq!(total,4);
+        assert!(audits.iter().all(|audit|audit.before_data.is_some()||audit.action=="create"));
+
+        crate::db::migrations::run(&pool.get().unwrap()).unwrap();
+        let events_after_rerun=crate::repo::trace_repo::list(&pool,"work_records",record.id).unwrap();
+        assert_eq!(events_after_rerun.len(),4);
+        drop(pool);let _=std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn migration_backfills_invalid_legacy_timestamp_with_stable_number(){
+        let(pool,path,group,project,method)=setup();
+        let conn=pool.get().unwrap();
+        conn.execute("INSERT INTO work_records(project_id,method_id,user_name,quantity,recorded_at,group_id,business_no) VALUES(?1,?2,'legacy01',1,'invalid-time',?3,'')",rusqlite::params![project,method,group]).unwrap();
+        let id=conn.last_insert_rowid();drop(conn);
+        crate::db::migrations::run(&pool.get().unwrap()).unwrap();
+        let migrated=get_by_id(&pool,id).unwrap();
+        assert!(migrated.business_no.starts_with("WK-"));
+        assert!(migrated.business_no.ends_with(&format!("-{id:06}")));
+        let events=crate::repo::trace_repo::list(&pool,"work_records",id).unwrap();
+        assert_eq!(events.len(),1);assert_eq!(events[0].event_type,"legacy_import");
+        drop(pool);let _=std::fs::remove_file(path);
+    }
+}
